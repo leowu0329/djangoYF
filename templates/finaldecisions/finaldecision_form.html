@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card">
+    <div class="card-header bg-primary text-white">
+      <h1 class="card-title">{% if form.instance.pk %}Edit Final Decision{% else %}Create Final Decision{% endif %}</h1>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+          <div class="mb-3">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {% if field.field.widget.attrs.class %}
+              {{ field }}
+            {% else %}
+              {{ field|add_class:"form-control" }}
+            {% endif %}
+            {% for error in field.errors %}
+              <div class="alert alert-danger mt-1">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endfor %}
+        <div class="d-flex justify-content-end">
+          <button type="submit" class="btn btn-primary me-2">Save</button>
+          <a href="{% if form.instance.pk %}{% url 'case_detail' form.instance.cases_id %}{% else %}{% url 'case_detail' case.id %}{% endif %}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

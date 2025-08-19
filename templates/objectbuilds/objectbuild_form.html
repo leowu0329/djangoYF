@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card">
+    <div class="card-header bg-primary text-white">
+      <h1 class="card-title">{% if form.instance.pk %}Edit Comparable{% else %}Add Comparable{% endif %}</h1>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">類型</label>
+            {{ form.type }}
+          </div>
+          <div class="col-md-8">
+            <label class="form-label">地址</label>
+            {{ form.address|add_class:"form-control" }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">附件</label>
+            {{ form.url|add_class:"form-control" }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">屋齡(年)</label>
+            {{ form.houseAge|add_class:"form-control" }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">成交日期</label>
+            {{ form.transactionDate|add_class:"form-control" }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">樓高</label>
+            {{ form.floorHeight|add_class:"form-control" }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">總價</label>
+            {{ form.totalPrice|add_class:"form-control" }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">建坪(坪)</label>
+            {{ form.buildArea|add_class:"form-control" }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">增建坪數(坪)</label>
+            {{ form.subBuildArea|add_class:"form-control" }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">單價(自動計算)</label>
+            <input type="text" class="form-control" value="{% if form.instance.unitPrice %}{{ form.instance.unitPrice }}{% else %}-{% endif %}" disabled>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">計算</label>
+            {{ form.calculate|add_class:"form-control" }}
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end mt-4">
+          <button type="submit" class="btn btn-primary me-2">Save</button>
+          <a href="{% if form.instance.pk %}{% url 'case_detail' form.instance.cases_id %}{% else %}{% url 'case_detail' case.id %}{% endif %}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

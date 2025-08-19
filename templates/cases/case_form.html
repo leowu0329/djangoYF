@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card">
+    <div class="card-header bg-primary text-white">
+      <h1 class="card-title">{% if form.instance.pk %}Edit Case{% else %}Create New Case{% endif %}</h1>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        <!-- Row 1: 案號(*) + 所屬公司 -->
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="{{ form.caseNumber.id_for_label }}" class="form-label">{{ form.caseNumber.label }}</label>
+            {{ form.caseNumber|add_class:"form-control" }}
+            {% if form.caseNumber.help_text %}<div class="form-text">{{ form.caseNumber.help_text }}</div>{% endif %}
+            {% for error in form.caseNumber.errors %}<div class="alert alert-danger mt-1">{{ error }}</div>{% endfor %}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="{{ form.company.id_for_label }}" class="form-label">{{ form.company.label }}</label>
+            {{ form.company|add_class:"form-select" }}
+            {% if form.company.help_text %}<div class="form-text">{{ form.company.help_text }}</div>{% endif %}
+            {% for error in form.company.errors %}<div class="alert alert-danger mt-1">{{ error }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <!-- Row 2: 縣市 + 鄉鎮區里 -->
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="{{ form.city.id_for_label }}" class="form-label">{{ form.city.label }}</label>
+            {{ form.city|add_class:"form-control" }}
+            {% if form.city.help_text %}<div class="form-text">{{ form.city.help_text }}</div>{% endif %}
+            {% for error in form.city.errors %}<div class="alert alert-danger mt-1">{{ error }}</div>{% endfor %}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="{{ form.township.id_for_label }}" class="form-label">{{ form.township.label }}</label>
+            {{ form.township|add_class:"form-control" }}
+            {% if form.township.help_text %}<div class="form-text">{{ form.township.help_text }}</div>{% endif %}
+            {% for error in form.township.errors %}<div class="alert alert-danger mt-1">{{ error }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <!-- Rows: 一列四欄 -->
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            <label for="{{ form.bigSection.id_for_label }}" class="form-label">{{ form.bigSection.label }}</label>
+            {{ form.bigSection|add_class:"form-control" }}
+            {% for error in form.bigSection.errors %}<div class="alert alert-danger mt-1">{{ error }}</div>{% endfor %}
+          </div>
+          <div class="col-md-3 mb-3">
+            <label for="{{ form.section.id_for_label }}" class="form-label">{{ form.section.label }}</label>
+            {{ form.section|add_class:"form-control" }}
+            {% for error in form.section.errors %}<div class="alert alert-danger mt-1">{{ error }}</div>{% endfor %}
+          </div>
+          <div class="col-md-3 mb-3">
+            <label for="{{ form.village.id_for_label }}" class="form-label">{{ form.village.label }}</label>
+            {{ form.village|add_class:"form-control" }}
+            {% for error in form.village.errors %}<div class="alert alert-danger mt-1">{{ error }}</div>{% endfor %}
+          </div>
+          <div class="col-md-3 mb-3">
+            <label for="{{ form.neighbor.id_for_label }}" class="form-label">{{ form.neighbor.label }}</label>
+            {{ form.neighbor|add_class:"form-control" }}
+            {% for error in form.neighbor.errors %}<div class="alert alert-danger mt-1">{{ error }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            <label for="{{ form.street.id_for_label }}" class="form-label">{{ form.street.label }}</label>
+            {{ form.street|add_class:"form-control" }}
+            {% for error in form.street.errors %}<div class="alert alert-danger mt-1">{{ error }}</div>{% endfor %}
+          </div>
+          <div class="col-md-3 mb-3">
+            <label for="{{ form.smallSection.id_for_label }}" class="form-label">{{ form.smallSection.label }}</label>
+            {{ form.smallSection|add_class:"form-control" }}
+            {% for error in form.smallSection.errors %}<div class="alert alert-danger mt-1">{{ error }}</div>{% endfor %}
+          </div>
+          <div class="col-md-3 mb-3">
+            <label for="{{ form.lane.id_for_label }}" class="form-label">{{ form.lane.label }}</label>
+            {{ form.lane|add_class:"form-control" }}
+            {% for error in form.lane.errors %}<div class="alert alert-danger mt-1">{{ error }}</div>{% endfor %}
+          </div>
+          <div class="col-md-3 mb-3">
+            <label for="{{ form.alley.id_for_label }}" class="form-label">{{ form.alley.label }}</label>
+            {{ form.alley|add_class:"form-control" }}
+            {% for error in form.alley.errors %}<div class="alert alert-danger mt-1">{{ error }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            <label for="{{ form.number.id_for_label }}" class="form-label">{{ form.number.label }}</label>
+            {{ form.number|add_class:"form-control" }}
+            {% for error in form.number.errors %}<div class="alert alert-danger mt-1">{{ error }}</div>{% endfor %}
+          </div>
+          <div class="col-md-3 mb-3">
+            <label for="{{ form.Floor.id_for_label }}" class="form-label">{{ form.Floor.label }}</label>
+            {{ form.Floor|add_class:"form-control" }}
+            {% for error in form.Floor.errors %}<div class="alert alert-danger mt-1">{{ error }}</div>{% endfor %}
+          </div>
+          <div class="col-md-3 mb-3">
+            <label for="{{ form.status.id_for_label }}" class="form-label">{{ form.status.label }}</label>
+            {{ form.status|add_class:"form-control" }}
+            {% for error in form.status.errors %}<div class="alert alert-danger mt-1">{{ error }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end">
+          <button type="submit" class="btn btn-primary me-2">
+            <i class="bi bi-save"></i> Save
+          </button>
+          <a href="{% if form.instance.pk %}{% url 'case_detail' form.instance.pk %}{% else %}{% url 'case_list' %}{% endif %}" class="btn btn-outline-secondary">
+            <i class="bi bi-x-circle"></i> Cancel
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

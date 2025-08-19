@@ -1,0 +1,442 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h1 class="card-title mb-0">Case Detail: {{ case.caseNumber }}</h1>
+      <a href="{% url 'case_list' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left-circle"></i> Back to Cases
+      </a>
+    </div>
+    <div class="card-body">
+      <!-- Tabs -->
+      <ul class="nav nav-tabs" id="caseTab" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="true">
+            <i class="bi bi-info-circle"></i> Details
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="lands-tab" data-bs-toggle="tab" data-bs-target="#lands" type="button" role="tab" aria-controls="lands" aria-selected="false">
+            <i class="bi bi-map"></i> Lands
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="builds-tab" data-bs-toggle="tab" data-bs-target="#builds" type="button" role="tab" aria-controls="builds" aria-selected="false">
+            <i class="bi bi-building"></i> Builds
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="people-tab" data-bs-toggle="tab" data-bs-target="#people" type="button" role="tab" aria-controls="people" aria-selected="false">
+            <i class="bi bi-people"></i> People
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="surveys-tab" data-bs-toggle="tab" data-bs-target="#surveys" type="button" role="tab" aria-controls="surveys" aria-selected="false">
+            <i class="bi bi-clipboard-data"></i> Surveys
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="finaldecisions-tab" data-bs-toggle="tab" data-bs-target="#finaldecisions" type="button" role="tab" aria-controls="finaldecisions" aria-selected="false">
+            <i class="bi bi-check2-square"></i> Final Decisions
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="results-tab" data-bs-toggle="tab" data-bs-target="#results" type="button" role="tab" aria-controls="results" aria-selected="false">
+            <i class="bi bi-graph-up"></i> Results
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="objectbuilds-tab" data-bs-toggle="tab" data-bs-target="#objectbuilds" type="button" role="tab" aria-controls="objectbuilds" aria-selected="false">
+            <i class="bi bi-house"></i> Object Builds
+          </button>
+        </li>
+      </ul>
+
+      <div class="tab-content pt-3" id="caseTabContent">
+        <!-- Details Tab -->
+        <div class="tab-pane fade show active" id="details" role="tabpanel" aria-labelledby="details-tab">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item"><strong>Company:</strong> {{ case.company }}</li>
+            <li class="list-group-item"><strong>Address:</strong> {{ case.fullAddress }}</li>
+            <li class="list-group-item"><strong>Status:</strong> {{ case.status }}</li>
+            <li class="list-group-item"><strong>Last Updated:</strong> {{ case.updated }}</li>
+            <li class="list-group-item"><strong>Created:</strong> {{ case.timestamp }}</li>
+            <li class="list-group-item"><strong>Responsible Person:</strong> {{ case.user.username }}</li>
+          </ul>
+
+          <!-- Actions -->
+          <div class="mt-4 d-flex gap-2">
+            <a href="{% url 'case_update' case.id %}" class="btn btn-primary">
+              <i class="bi bi-pencil"></i> Edit
+            </a>
+            <a href="{% url 'case_delete' case.id %}" class="btn btn-danger">
+              <i class="bi bi-trash"></i> Delete
+            </a>
+          </div>
+        </div>
+
+        <!-- Lands Tab -->
+        <div class="tab-pane fade" id="lands" role="tabpanel" aria-labelledby="lands-tab">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Lands</h5>
+            <a href="{% url 'land_create' case_pk=case.id %}" class="btn btn-sm btn-success">
+              <i class="bi bi-plus-circle"></i> Add Land
+            </a>
+          </div>
+          {% if case.lands.all %}
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Land Number</th>
+                    <th>Area (m²)</th>
+                    <th>Personal Share</th>
+                    <th>Total Share</th>
+                    <th>Calculated (坪)</th>
+                    <th class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for land in case.lands.all %}
+                    <tr>
+                      <td>
+                        {% if land.url %}
+                          <a href="{{ land.url }}" target="_blank" class="text-decoration-none">{{ land.landNumber }}</a>
+                        {% else %}
+                          {{ land.landNumber }}
+                        {% endif %}
+                      </td>
+                      <td>{{ land.area }}</td>
+                      <td>{{ land.holdingPointPersonal }}</td>
+                      <td>{{ land.holdingPointAll }}</td>
+                      <td>{{ land.calculatedArea }}</td>
+                      <td class="text-end">
+                        <a href="{% url 'land_update' land.id %}" class="btn btn-sm btn-outline-primary">
+                          <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{% url 'land_delete' land.id %}" class="btn btn-sm btn-outline-danger">
+                          <i class="bi bi-trash"></i>
+                        </a>
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted">No land records.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="alert alert-info">No land records.</div>
+          {% endif %}
+        </div>
+
+        <!-- Builds Tab -->
+        <div class="tab-pane fade" id="builds" role="tabpanel" aria-labelledby="builds-tab">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Builds</h5>
+            <a href="{% url 'build_create' case_pk=case.id %}" class="btn btn-sm btn-success">
+              <i class="bi bi-plus-circle"></i> Add Build
+            </a>
+          </div>
+          {% if case.builds.all %}
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Build Number</th>
+                    <th>Area (m²)</th>
+                    <th>Personal Share</th>
+                    <th>Total Share</th>
+                    <th>Calculated (坪)</th>
+                    <th>Type</th>
+                    <th>Partition</th>
+                    <th class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for build in case.builds.all %}
+                    <tr>
+                      <td>
+                        {% if build.url %}
+                          <a href="{{ build.url }}" target="_blank" class="text-decoration-none">{{ build.buildNumber }}</a>
+                        {% else %}
+                          {{ build.buildNumber }}
+                        {% endif %}
+                      </td>
+                      <td>{{ build.area }}</td>
+                      <td>{{ build.holdingPointPersonal }}</td>
+                      <td>{{ build.holdingPointAll }}</td>
+                      <td>{{ build.calculatedArea }}</td>
+                      <td>{{ build.typeUse }}</td>
+                      <td>{{ build.usePartition }}</td>
+                      <td class="text-end">
+                        <a href="{% url 'build_update' build.id %}" class="btn btn-sm btn-outline-primary">
+                          <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{% url 'build_delete' build.id %}" class="btn btn-sm btn-outline-danger">
+                          <i class="bi bi-trash"></i>
+                        </a>
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="8" class="text-center text-muted">No build records.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="alert alert-info">No build records.</div>
+          {% endif %}
+        </div>
+
+        <!-- People Tab -->
+        <div class="tab-pane fade" id="people" role="tabpanel" aria-labelledby="people-tab">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">People</h5>
+            <a href="{% url 'person_create' case_pk=case.id %}" class="btn btn-sm btn-success">
+              <i class="bi bi-plus-circle"></i> Add Person
+            </a>
+          </div>
+          {% if case.people.all %}
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Phone</th>
+                    <th class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for person in case.people.all %}
+                    <tr>
+                      <td>{{ person.name }}</td>
+                      <td>{{ person.type }}</td>
+                      <td>{{ person.phone }}</td>
+                      <td class="text-end">
+                        <a href="{% url 'person_update' person.id %}" class="btn btn-sm btn-outline-primary">
+                          <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{% url 'person_delete' person.id %}" class="btn btn-sm btn-outline-danger">
+                          <i class="bi bi-trash"></i>
+                        </a>
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="4" class="text-center text-muted">No people records.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="alert alert-info">No people records.</div>
+          {% endif %}
+        </div>
+
+        <!-- Surveys Tab -->
+        <div class="tab-pane fade" id="surveys" role="tabpanel" aria-labelledby="surveys-tab">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Surveys</h5>
+            <a href="{% url 'survey_create' case_pk=case.id %}" class="btn btn-sm btn-success">
+              <i class="bi bi-plus-circle"></i> Add Survey
+            </a>
+          </div>
+          {% if case.surveys.all %}
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>初勘日</th>
+                    <th>會勘日</th>
+                    <th>法拍公告</th>
+                    <th>998</th>
+                    <th>物件照片</th>
+                    <th>市場行情</th>
+                    <th>法拍記錄</th>
+                    <th>現場勘查</th>
+                    <th>收發文薄</th>
+                    <th>流水帳</th>
+                    <th class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for s in case.surveys.all %}
+                    <tr>
+                      <td>{{ s.firstDay }}</td>
+                      <td>{{ s.secondDay }}</td>
+                      <td>{% if s.foreclosureAnnouncementLink %}<a href="{{ s.foreclosureAnnouncementLink }}" target="_blank">Link</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                      <td>{% if s.house988Link %}<a href="{{ s.house988Link }}" target="_blank">Link</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                      <td>{% if s.objectPhotoLink %}<a href="{{ s.objectPhotoLink }}" target="_blank">Link</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                      <td>{% if s.netMarketPriceLink %}<a href="{{ s.netMarketPriceLink }}" target="_blank">Link</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                      <td>{% if s.foreclosureRecordLink %}<a href="{{ s.foreclosureRecordLink }}" target="_blank">Link</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                      <td>{% if s.objectViewLink %}<a href="{{ s.objectViewLink }}" target="_blank">Link</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                      <td>{% if s.pagesViewLink %}<a href="{{ s.pagesViewLink }}" target="_blank">Link</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                      <td>{% if s.moneytViewLink %}<a href="{{ s.moneytViewLink }}" target="_blank">Link</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                      <td class="text-end">
+                        <a href="{% url 'survey_update' s.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'survey_delete' s.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="11" class="text-center text-muted">No survey records.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="alert alert-info">No survey records.</div>
+          {% endif %}
+        </div>
+
+        <!-- Final Decisions Tab -->
+        <div class="tab-pane fade" id="finaldecisions" role="tabpanel" aria-labelledby="finaldecisions-tab">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Final Decisions</h5>
+            <a href="{% url 'finaldecision_create' case_pk=case.id %}" class="btn btn-sm btn-success">
+              <i class="bi bi-plus-circle"></i> Add Final Decision
+            </a>
+          </div>
+          {% if case.finaldecisions.all %}
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>最終判定</th>
+                    <th>分類</th>
+                    <th>人員</th>
+                    <th>日期</th>
+                    <th>工作轄區</th>
+                    <th>備註</th>
+                    <th class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for fd in case.finaldecisions.all %}
+                    <tr>
+                      <td>{{ fd.finalDecision }}</td>
+                      <td>{{ fd.type }}</td>
+                      <td>{{ fd.name }}</td>
+                      <td>{{ fd.date }}</td>
+                      <td>{{ fd.workArea }}</td>
+                      <td class="text-truncate" style="max-width: 420px;">{{ fd.remark }}</td>
+                      <td class="text-end">
+                        <a href="{% url 'finaldecision_update' fd.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'finaldecision_delete' fd.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="7" class="text-center text-muted">No final decisions.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="alert alert-info">No final decisions.</div>
+          {% endif %}
+        </div>
+
+        <!-- Results Tab -->
+        <div class="tab-pane fade" id="results" role="tabpanel" aria-labelledby="results-tab">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Results</h5>
+            <a href="{% url 'result_create' case_pk=case.id %}" class="btn btn-sm btn-success">
+              <i class="bi bi-plus-circle"></i> Add Result
+            </a>
+          </div>
+          {% if case.results.all %}
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>應買止日</th>
+                    <th>執行結果</th>
+                    <th>搶標拍別</th>
+                    <th>搶標金額</th>
+                    <th>標的編號</th>
+                    <th class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for result in case.results.all %}
+                    <tr>
+                      <td>{{ result.stopBuyDate|date:"Y-m-d" }}</td>
+                      <td>{{ result.actionResult }}</td>
+                      <td>{{ result.bidAuctionTime }}</td>
+                      <td>{{ result.bidMoney }}</td>
+                      <td>{{ result.objectNumber }}</td>
+                      <td class="text-end">
+                        <a href="{% url 'result_update' result.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'result_delete' result.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted">No results.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="alert alert-info">No results.</div>
+          {% endif %}
+        </div>
+
+        <!-- Object Builds Tab -->
+        <div class="tab-pane fade" id="objectbuilds" role="tabpanel" aria-labelledby="objectbuilds-tab">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Object Builds</h5>
+            <a href="{% url 'objectbuild_create' case_pk=case.id %}" class="btn btn-sm btn-success">
+              <i class="bi bi-plus-circle"></i> Add Comparable
+            </a>
+          </div>
+          {% if case.objectbuilds.all %}
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>參考物件訊息</th>
+                    <th>加成</th>
+                    <th>計算</th>
+                    <th class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for ob in case.objectbuilds.all %}
+                    <tr>
+                      <td>
+                        類型: {{ ob.type }}<br>
+                        地址: {{ ob.address }}<br>
+                        附件: {% if ob.url %}<a href="{{ ob.url }}" target="_blank">Link</a>{% else %}<span class="text-muted">—</span>{% endif %}<br>
+                        屋齡(年): {{ ob.houseAge }}<br>
+                        成交日期: {{ ob.transactionDate }}<br>
+                        樓高: {{ ob.floorHeight }}<br>
+                        總價: {{ ob.totalPrice }}<br>
+                        建坪(坪): {{ ob.buildArea }}<br>
+                        增建坪數(坪): {{ ob.subBuildArea }}<br>
+                        單價: {{ ob.unitPrice }}
+                      </td>
+                      <td><!-- 加成 content --></td>
+                      <td>{{ ob.calculate }}</td>
+                      <td class="text-end">
+                        <a href="{% url 'objectbuild_update' ob.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'objectbuild_delete' ob.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="4" class="text-center text-muted">No comparables.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="alert alert-info">No comparables.</div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
