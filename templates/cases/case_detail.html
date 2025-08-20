@@ -52,6 +52,11 @@
             <i class="bi bi-house"></i> Object Builds
           </button>
         </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="auctions-tab" data-bs-toggle="tab" data-bs-target="#auctions" type="button" role="tab" aria-controls="auctions" aria-selected="false">
+            <i class="bi bi-gavel"></i> Auctions
+          </button>
+        </li>
       </ul>
 
       <div class="tab-content pt-3" id="caseTabContent">
@@ -417,7 +422,24 @@
                         增建坪數(坪): {{ ob.subBuildArea }}<br>
                         單價: {{ ob.unitPrice }}
                       </td>
-                      <td><!-- 加成 content --></td>
+                      <td>
+                        {% if ob.bounses.all %}
+                          {% for bouns in ob.bounses.all %}
+                            <div>
+                              勘查員: {{ bouns.bounsPerson }}<br>
+                              加成: {{ bouns.bounsRate }}<br>
+                              加成原因: {{ bouns.bounsReason }}
+                              <a href="{% url 'bouns_update' bouns.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                              <a href="{% url 'bouns_delete' bouns.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                            </div>
+                          {% endfor %}
+                        {% else %}
+                          <span class="text-muted">—</span>
+                        {% endif %}
+                        <a href="{% url 'bouns_create' objectbuild_pk=ob.id %}" class="btn btn-sm btn-success mt-2">
+                          <i class="bi bi-plus-circle"></i> Add Bouns
+                        </a>
+                      </td>
                       <td>{{ ob.calculate }}</td>
                       <td class="text-end">
                         <a href="{% url 'objectbuild_update' ob.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
@@ -432,6 +454,59 @@
             </div>
           {% else %}
             <div class="alert alert-info">No comparables.</div>
+          {% endif %}
+        </div>
+
+        <!-- Auctions Tab -->
+        <div class="tab-pane fade" id="auctions" role="tabpanel" aria-labelledby="auctions-tab">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Auctions</h5>
+            <a href="{% url 'auction_create' case_pk=case.id %}" class="btn btn-sm btn-success">
+              <i class="bi bi-plus-circle"></i> Add Auction
+            </a>
+          </div>
+          {% if case.auctions.all %}
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>拍別</th>
+                    <th>拍賣日</th>
+                    <th>底價</th>
+                    <th>坪價</th>
+                    <th>CP</th>
+                    <th>點閱</th>
+                    <th>監控</th>
+                    <th>成交件數</th>
+                    <th>保証金</th>
+                    <th class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for auction in case.auctions.all %}
+                    <tr>
+                      <td>{{ auction.type }}</td>
+                      <td>{{ auction.auctionDate|date:"Y-m-d" }}</td>
+                      <td>{{ auction.floorPrice }}</td>
+                      <td>{{ auction.pingPrice }}</td>
+                      <td>{{ auction.CP }}</td>
+                      <td>{{ auction.click }}</td>
+                      <td>{{ auction.monitor }}</td>
+                      <td>{{ auction.caseCount }}</td>
+                      <td>{{ auction.margin }}</td>
+                      <td class="text-end">
+                        <a href="{% url 'auction_update' auction.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'auction_delete' auction.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="10" class="text-center text-muted">No auctions.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="alert alert-info">No auctions.</div>
           {% endif %}
         </div>
       </div>

@@ -192,7 +192,7 @@ class ObjectBuild(models.Model):
   address = models.CharField(u'地址', max_length=100, null=True, blank=True)
   url = models.URLField(u'附件', max_length=1000, null=True, blank=True)
   houseAge = models.DecimalField(u'屋齡(年)', default=0, max_digits=5, decimal_places=2, null=True, blank=True)
-  transactionDate = models.CharField(u'成交日期', max_length=100, null=True, blank=True)
+  transactionDate = models.DateField(u'成交日期', null=True, blank=True)
   floorHeight = models.CharField(u'樓高', max_length=100, null=True, blank=True)
   totalPrice = models.DecimalField(u'總價', default=0, max_digits=10, decimal_places=0, null=True, blank=True)
   buildArea = models.DecimalField(u'建坪(坪)', default=0, max_digits=10, decimal_places=2, null=True, blank=True)
@@ -202,20 +202,122 @@ class ObjectBuild(models.Model):
   created = models.DateTimeField(u'建立時間', auto_now=False, auto_now_add=True)
   updated = models.DateTimeField(u'更新時間', auto_now=True, auto_now_add=False)
 
+  def _get_bounses_average_rate(self):
+    from django.db.models import Avg # Moved import inside function as it's not a global constant
+    # Using 'bounses' as related_name
+    average_rate = self.bounses.aggregate(Avg('bounsRate'))['bounsRate__avg']
+    return Decimal(average_rate or 0)
+
   def save(self, *args, **kwargs):
+    is_new = self._state.adding # Check if this is a new instance
+
+    # Step 1: Calculate unitPrice before initial save (if it's a new instance or relevant fields changed)
     try:
       total_price = Decimal(self.totalPrice or 0)
       build_area = Decimal(self.buildArea or 0)
       sub_build_area = Decimal(self.subBuildArea or 0)
+      print(f"ObjectBuild Save (pre-save): total_price={total_price}, build_area={build_area}, sub_build_area={sub_build_area}")
+
       denominator = build_area + (sub_build_area / Decimal('2'))
       if denominator and denominator != 0:
-        # unitPrice = totalPrice / (buildArea + (subBuildArea / 2))
         self.unitPrice = (total_price / denominator).quantize(Decimal('1'))
       else:
         self.unitPrice = Decimal('0')
-    except (InvalidOperation, DivisionByZero):
+      print(f"ObjectBuild Save (pre-save): unitPrice={self.unitPrice}")
+    except (InvalidOperation, DivisionByZero) as e:
+      print(f"Error in ObjectBuild pre-save calculation: {e}")
       self.unitPrice = Decimal('0')
+
+    # Step 2: Save the instance to ensure it has a primary key
     super().save(*args, **kwargs)
+
+    # Step 3: Calculate 'calculate' field AFTER the instance has a PK
+    try:
+      bouns_avg = self._get_bounses_average_rate()
+      print(f"ObjectBuild Save (post-save): bouns_avg={bouns_avg}")
+      new_calculate_value = (bouns_avg + Decimal('1')) * (self.unitPrice or 0)
+      print(f"ObjectBuild Save (post-save): new_calculate_value={new_calculate_value}")
+
+      # Only save if the calculate value has actually changed to avoid infinite loops
+      if self.calculate != new_calculate_value:
+        self.calculate = new_calculate_value
+        # Avoid calling self.save() directly to prevent recursion.
+        # Use update_fields to save only the 'calculate' field.
+        ObjectBuild.objects.filter(pk=self.pk).update(calculate=self.calculate)
+        print(f"ObjectBuild Save (post-save): calculate updated via .update()")
+
+    except (InvalidOperation, DivisionByZero) as e:
+      print(f"Error in ObjectBuild post-save calculation: {e}")
+      # Ensure calculate is set to 0 on error
+      if self.calculate != Decimal('0'):
+        self.calculate = Decimal('0')
+        ObjectBuild.objects.filter(pk=self.pk).update(calculate=self.calculate)
+        print(f"ObjectBuild Save (post-save): calculate set to 0 due to error via .update()")
 
   def __str__(self):
     return f"{self.cases.caseNumber} - {self.address or ''}"
+
+class Bouns(models.Model):
+  objectbuild=models.ForeignKey(ObjectBuild,related_name='bounses',on_delete=models.CASCADE)
+  bounsPerson= models.CharField(u'勘查員',max_length=100,null=True,blank=True)
+  bounsRate=models.DecimalField(u'加成',default=0,max_digits=4,decimal_places=2,null=True,blank=True)
+  bounsReason = models.CharField(u'加成原因',max_length=100,null=True,blank=True)
+  updated = models.DateTimeField(u'更新時間',auto_now=True,auto_now_add=False)
+  timestamp = models.DateTimeField(u'建立時間',auto_now=False,auto_now_add=True)
+
+  def save(self, *args, **kwargs):
+    super().save(*args, **kwargs) # Call the original save method
+    self.objectbuild.save() # Trigger recalculation on related ObjectBuild
+
+  def delete(self, *args, **kwargs):
+    objectbuild_instance = self.objectbuild
+    super().delete(*args, **kwargs) # Call the original delete method
+    objectbuild_instance.save() # Trigger recalculation on related ObjectBuild
+
+class Auction(models.Model):
+  TYPE_CHOICES = [
+    ("1拍", "1拍"),
+    ("2拍", "2拍"),
+    ("3拍", "3拍"),
+    ("4拍", "4拍"),
+  ]
+  cases=models.ForeignKey(Cases,related_name='auctions',on_delete=models.CASCADE)
+  type = models.CharField(u'拍別',max_length=10,null=True,blank=True, choices=TYPE_CHOICES)
+  auctionDate = models.DateField(u'拍賣日',null=True,blank=True)
+  floorPrice = models.DecimalField(u'底價',default=0,max_digits=10,decimal_places=0,null=True,blank=True)
+  pingPrice = models.DecimalField(u'坪價',default=0,max_digits=10,decimal_places=0,null=True,blank=True)
+  CP = models.DecimalField(u'CP',default=0,max_digits=10,decimal_places=2,null=True,blank=True)
+  click = models.DecimalField(u'點閱',default=0,max_digits=4,decimal_places=0,null=True,blank=True)
+  monitor = models.DecimalField(u'監控',default=0,max_digits=4,decimal_places=0,null=True,blank=True)
+  caseCount = models.DecimalField(u'成交件數',default=0,max_digits=4,decimal_places=0,null=True,blank=True)
+  margin = models.DecimalField(u'保証金',default=0,max_digits=10,decimal_places=0,null=True,blank=True)
+  created = models.DateTimeField(u'建立時間', auto_now=False, auto_now_add=True)
+  updated = models.DateTimeField(u'更新時間', auto_now=True, auto_now_add=False)
+
+  def save(self, *args, **kwargs):
+    from django.db.models import Sum, Avg # Import Sum and Avg inside the method
+    super().save(*args, **kwargs) # Save first to ensure self.cases is available
+
+    try:
+      total_calculated_area = self.cases.builds.aggregate(Sum('calculatedArea'))['calculatedArea__sum']
+      if total_calculated_area and total_calculated_area > 0:
+        self.pingPrice = (self.floorPrice / total_calculated_area).quantize(Decimal('1'))
+      else:
+        self.pingPrice = Decimal('0')
+      
+      # CP calculation
+      avg_objectbuild_calculate = self.cases.objectbuilds.aggregate(Avg('calculate'))['calculate__avg']
+      if self.pingPrice and self.pingPrice > 0 and avg_objectbuild_calculate is not None:
+        self.CP = (Decimal(avg_objectbuild_calculate) / self.pingPrice).quantize(Decimal('0.01'))
+      else:
+        self.CP = Decimal('0')
+
+      # Update the instance without re-saving the whole object (to avoid recursion)
+      Auction.objects.filter(pk=self.pk).update(pingPrice=self.pingPrice, CP=self.CP)
+
+    except (InvalidOperation, DivisionByZero) as e:
+      print(f"Error calculating pingPrice/CP for Auction {self.pk}: {e}")
+      Auction.objects.filter(pk=self.pk).update(pingPrice=Decimal('0'), CP=Decimal('0'))
+
+  def __str__(self):
+    return f"{self.cases.caseNumber} - {self.type or ''} ({self.auctionDate or ''})"

@@ -1,5 +1,5 @@
 from django import forms
-from .models import Cases, Land, Build, Person, Survey, FinalDecision, Result, ObjectBuild
+from .models import Cases, Land, Build, Person, Survey, FinalDecision, Result, ObjectBuild, Bouns, Auction
 
 COMPANY_CHOICES = [
 	("揚富開發", "揚富開發"),
@@ -256,15 +256,39 @@ class ObjectBuildForm(forms.ModelForm):
 	)
 	class Meta:
 		model = ObjectBuild
-		fields = ["type", "address", "url", "houseAge", "transactionDate", "floorHeight", "totalPrice", "buildArea", "subBuildArea", "calculate"]
+		fields = ["type", "address", "url", "houseAge", "transactionDate", "floorHeight", "totalPrice", "buildArea", "subBuildArea", "calculate", "cases"]
 		widgets = {
-			"address": forms.TextInput(attrs={"class": "form-control"}),
-			"url": forms.URLInput(attrs={"class": "form-control"}),
-			"houseAge": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+			"cases": forms.HiddenInput(),
+			"type": forms.Select(attrs={"class": "form-control"}),
 			"transactionDate": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
-			"floorHeight": forms.TextInput(attrs={"class": "form-control"}),
-			"totalPrice": forms. NumberInput(attrs={"class": "form-control"}),
-			"buildArea": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
-			"subBuildArea": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
-			"calculate": forms.NumberInput(attrs={"class": "form-control"}),
+		}
+
+class BounsForm(forms.ModelForm):
+	class Meta:
+		model = Bouns
+		fields = ('objectbuild', 'bounsPerson', 'bounsRate', 'bounsReason')
+		widgets = {
+			'objectbuild': forms.HiddenInput(),
+		}
+
+class AuctionForm(forms.ModelForm):
+	type = forms.ChoiceField(
+		choices=[("1拍", "1拍"), ("2拍", "2拍"), ("3拍", "3拍"), ("4拍", "4拍")],
+		widget=forms.Select(attrs={"class": "form-select"}),
+		label='拍別',
+		required=False,
+	)
+	class Meta:
+		model = Auction
+		fields = ('cases', 'type', 'auctionDate', 'floorPrice', 'pingPrice', 'CP', 'click', 'monitor', 'caseCount', 'margin')
+		widgets = {
+			'cases': forms.HiddenInput(),
+			'auctionDate': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+			'floorPrice': forms.NumberInput(attrs={'class': 'form-control'}),
+			'pingPrice': forms.NumberInput(attrs={'class': 'form-control', 'disabled': True}),
+			'CP': forms.NumberInput(attrs={'class': 'form-control', 'disabled': True}),
+			'click': forms.NumberInput(attrs={'class': 'form-control'}),
+			'monitor': forms.NumberInput(attrs={'class': 'form-control'}),
+			'caseCount': forms.NumberInput(attrs={'class': 'form-control'}),
+			'margin': forms.NumberInput(attrs={'class': 'form-control'}),
 		}

@@ -50,4 +50,12 @@ urlpatterns = [
     path('cases/<int:case_pk>/objectbuilds/new/', views.ObjectBuildCreateView.as_view(), name='objectbuild_create'),
     path('objectbuilds/<int:pk>/update/', views.ObjectBuildUpdateView.as_view(), name='objectbuild_update'),
     path('objectbuilds/<int:pk>/delete/', views.ObjectBuildDeleteView.as_view(), name='objectbuild_delete'),
+    # Bouns
+    path('objectbuilds/<int:objectbuild_pk>/bouns/new/', views.BounsCreateView.as_view(), name='bouns_create'),
+    path('bouns/<int:pk>/update/', views.BounsUpdateView.as_view(), name='bouns_update'),
+    path('bouns/<int:pk>/delete/', views.BounsDeleteView.as_view(), name='bouns_delete'),
+    # Auction
+    path('cases/<int:case_pk>/auctions/new/', views.AuctionCreateView.as_view(), name='auction_create'),
+    path('auctions/<int:pk>/update/', views.AuctionUpdateView.as_view(), name='auction_update'),
+    path('auctions/<int:pk>/delete/', views.AuctionDeleteView.as_view(), name='auction_delete'),
 ]
