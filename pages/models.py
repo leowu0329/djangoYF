@@ -305,19 +305,41 @@ class Auction(models.Model):
       else:
         self.pingPrice = Decimal('0')
       
-      # CP calculation
-      avg_objectbuild_calculate = self.cases.objectbuilds.aggregate(Avg('calculate'))['calculate__avg']
-      if self.pingPrice and self.pingPrice > 0 and avg_objectbuild_calculate is not None:
-        self.CP = (Decimal(avg_objectbuild_calculate) / self.pingPrice).quantize(Decimal('0.01'))
-      else:
-        self.CP = Decimal('0')
+      # Replace the existing CP calculation with the new property
+      self.CP = self.calculated_cp_value
 
-      # Update the instance without re-saving the whole object (to avoid recursion)
       Auction.objects.filter(pk=self.pk).update(pingPrice=self.pingPrice, CP=self.CP)
 
     except (InvalidOperation, DivisionByZero) as e:
-      print(f"Error calculating pingPrice/CP for Auction {self.pk}: {e}")
       Auction.objects.filter(pk=self.pk).update(pingPrice=Decimal('0'), CP=Decimal('0'))
+
+  @property
+  def calculated_cp_value(self):
+    from django.db.models import Avg
+    try:
+      avg_objectbuild_calculate = self.cases.objectbuilds.all().aggregate(Avg('calculate'))['calculate__avg']
+      ping_price = self.pingPrice
+
+      if ping_price and ping_price > 0 and avg_objectbuild_calculate is not None:
+        return (Decimal(avg_objectbuild_calculate) / ping_price).quantize(Decimal('0.01'))
+      else:
+        return Decimal('0')
+    except (InvalidOperation, DivisionByZero):
+      return Decimal('0')
+
+  @property
+  def avg_objectbuild_calculate_display(self):
+    from django.db.models import Avg
+    filtered_objectbuilds = self.cases.objectbuilds.all()
+    avg_value = filtered_objectbuilds.aggregate(Avg('calculate'))['calculate__avg']
+    print(f"DEBUG: Auction.avg_objectbuild_calculate_display: raw_avg={avg_value}") # Re-added debug print
+    if avg_value is not None:
+      display_value = avg_value.quantize(Decimal('0.01'))
+      print(f"DEBUG: Auction.avg_objectbuild_calculate_display: formatted_avg={display_value}") # Re-added debug print
+      return display_value
+    else:
+      print(f"DEBUG: Auction.avg_objectbuild_calculate_display: returning 0") # Re-added debug print
+      return Decimal('0') # Changed from None to Decimal('0')
 
   def __str__(self):
     return f"{self.cases.caseNumber} - {self.type or ''} ({self.auctionDate or ''})"

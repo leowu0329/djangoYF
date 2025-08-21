@@ -489,7 +489,13 @@
                       <td>{{ auction.auctionDate|date:"Y-m-d" }}</td>
                       <td>{{ auction.floorPrice }}</td>
                       <td>{{ auction.pingPrice }}</td>
-                      <td>{{ auction.CP }}</td>
+                      <td>
+                        {% if auction.type == '1拍' and auction.CP > 0.92 or auction.type == '2拍' and auction.CP > 1.15 or auction.type == '3拍' and auction.CP > 1.44 or auction.type == '4拍' and auction.CP > 1.80 %}
+                          <span class="bg-white text-success fw-bold">{{ auction.calculated_cp_value }}(建議進場)</span>
+                        {% else %}
+                          <span class="bg-white text-danger fw-bold">{{ auction.calculated_cp_value }}(不可進場)</span>
+                        {% endif %}
+                      </td>
                       <td>{{ auction.click }}</td>
                       <td>{{ auction.monitor }}</td>
                       <td>{{ auction.caseCount }}</td>

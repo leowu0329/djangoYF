@@ -23,6 +23,11 @@ class CaseDetailView(LoginRequiredMixin, DetailView):
     template_name = 'cases/case_detail.html'
     context_object_name = 'case'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        case = self.get_object()
+        return context
+
 class CaseCreateView(LoginRequiredMixin, CreateView):
     model = Cases
     template_name = 'cases/case_form.html'
