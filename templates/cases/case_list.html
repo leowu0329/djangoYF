@@ -16,8 +16,13 @@
           <thead class="table-light">
             <tr>
               <th>案號</th>
-              <th>狀態</th>
               <th>完整地址</th>
+              <th>應買止日</th>
+              <th>負責人</th>
+              <th>最終判定</th>
+              <th>執行結果</th>
+              <th>優購結果</th>
+              <th>標的編號</th>
               <th class="text-end">操作</th>
             </tr>
           </thead>
@@ -25,18 +30,21 @@
             {% for case in cases %}
               <tr>
                 <td><a href="{% url 'case_detail' case.id %}" class="text-decoration-none">{{ case.caseNumber }}</a></td>
+                <td class="text-truncate" style="max-width: 420px;">{{ case.fullAddress }}</td>
+                <td>{{ case.results.last.stopBuyDate|date:"Y-m-d"|default:"—" }}</td>
+                <td>{{ case.user.username|default:"—" }}</td>
+                <td>{{ case.finaldecisions.last.finalDecision|default:"—" }}</td>
+                <td>{{ case.results.last.actionResult|default:"—" }}</td>
                 <td>
-                  {% if case.status %}
-                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">{{ case.status }}</span>
+                  {% if case.results.last.actionResult == '等待優購' or case.results.last.actionResult == '遭優購' %}
+                    {{ case.results.last.actionResult }}
                   {% else %}
-                    <span class="text-muted">—</span>
+                    —
                   {% endif %}
                 </td>
-                <td class="text-truncate" style="max-width: 420px;">{{ case.fullAddress }}</td>
+                <td>{{ case.results.last.objectNumber|default:"—" }}</td>
                 <td class="text-end">
-                  <a href="{% url 'case_update' case.id %}" class="btn btn-sm btn-outline-primary me-1">
-                    <i class="bi bi-pencil"></i> 編輯
-                  </a>
+                  
                   <a href="{% url 'case_delete' case.id %}" class="btn btn-sm btn-outline-danger">
                     <i class="bi bi-trash"></i> 刪除
                   </a>

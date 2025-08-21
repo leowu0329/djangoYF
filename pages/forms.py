@@ -2,8 +2,8 @@ from django import forms
 from .models import Cases, Land, Build, Person, Survey, FinalDecision, Result, ObjectBuild, Bouns, Auction
 
 COMPANY_CHOICES = [
-	("揚富開發", "揚富開發"),
-	("鉅汱開發", "鉅汱開發"),
+	("揚富開發有限公司", "揚富開發有限公司"),
+	("鉅汱開發有限公司", "鉅汱開發有限公司"),
 ]
 
 STATUS_CHOICES = [

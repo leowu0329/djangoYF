@@ -5,7 +5,7 @@
 <div class="container mt-4">
   <div class="card">
     <div class="card-header bg-primary text-white">
-      <h1 class="card-title">{% if form.instance.pk %}Edit Case{% else %}Create New Case{% endif %}</h1>
+      <h1 class="card-title">{% if form.instance.pk %}編輯案件{% else %}建立新案件{% endif %}</h1>
     </div>
     <div class="card-body">
       <form method="post">
@@ -110,10 +110,10 @@
 
         <div class="d-flex justify-content-end">
           <button type="submit" class="btn btn-primary me-2">
-            <i class="bi bi-save"></i> Save
+            <i class="bi bi-save"></i> 儲存
           </button>
           <a href="{% if form.instance.pk %}{% url 'case_detail' form.instance.pk %}{% else %}{% url 'case_list' %}{% endif %}" class="btn btn-outline-secondary">
-            <i class="bi bi-x-circle"></i> Cancel
+            <i class="bi bi-x-circle"></i> 取消
           </a>
         </div>
       </form>
