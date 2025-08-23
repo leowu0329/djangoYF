@@ -2,21 +2,97 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.db.models import Q # Import Q object for complex queries
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
 from django.views.decorators.clickjacking import xframe_options_exempt
-from .models import Cases, Land, Build, Person, Survey, FinalDecision, Result, ObjectBuild, Bouns, Auction
+from .models import Cases, Land, Build, Person, Survey, FinalDecision, Result, ObjectBuild, Bouns, Auction, City, Township
+from users.models import CustomUser # Import CustomUser model
 from .forms import CasesForm, LandForm, BuildForm, PersonForm, SurveyForm, FinalDecisionForm, ResultForm, ObjectBuildForm, BounsForm, AuctionForm
+from django.http import JsonResponse
 
 @login_required  # 這個裝飾器會自動檢查登入狀態
 def home_page(request):
     return render(request, 'home.html')  # 假設你的首頁模板是 home.html
 
+def load_townships(request):
+    city_id = request.GET.get('city_id')
+    townships = Township.objects.filter(city_id=city_id).order_by('name')
+    return JsonResponse(list(townships.values('id', 'name')), safe=False)
+
 class CaseListView(LoginRequiredMixin, ListView):
     model = Cases
     template_name = 'cases/case_list.html'  # <app>/<model>_list.html
     context_object_name = 'cases'
-    ordering = ['timestamp']
+    ordering = ['caseNumber'] # Changed default ordering
+    paginate_by = 10  # Default pagination
+
+    def get_paginate_by(self, queryset):
+        return self.request.GET.get('page_size', self.paginate_by)
+
+    def get_queryset(self):
+        queryset = Cases.objects.select_related('city', 'township', 'user').prefetch_related('results', 'finaldecisions')
+
+        # Filtering
+        city_filter = self.request.GET.get('city')
+        user_filter = self.request.GET.get('user')
+
+        if city_filter:
+            queryset = queryset.filter(city__id=city_filter)
+        if user_filter:
+            queryset = queryset.filter(user__id=user_filter)
+
+        # Keyword Search
+        search_query = self.request.GET.get('q')
+        if search_query:
+            queryset = queryset.filter(
+                Q(caseNumber__icontains=search_query) |
+                Q(city__name__icontains=search_query) |
+                Q(township__name__icontains=search_query) |
+                Q(village__icontains=search_query) |
+                Q(neighbor__icontains=search_query) |
+                Q(street__icontains=search_query) |
+                Q(section__icontains=search_query) |
+                Q(lane__icontains=search_query) |
+                Q(alley__icontains=search_query) |
+                Q(number__icontains=search_query) |
+                Q(Floor__icontains=search_query) |
+                Q(user__username__icontains=search_query) |
+                Q(results__stopBuyDate__icontains=search_query) | # Assuming date can be searched as string
+                Q(finaldecisions__finalDecision__icontains=search_query) |
+                Q(results__actionResult__icontains=search_query) |
+                Q(results__objectNumber__icontains=search_query)
+            ).distinct()
+
+        # Sorting
+        sort_by = self.request.GET.get('sort_by', 'timestamp') # Default sort by timestamp
+        order = self.request.GET.get('order', 'desc') # Default order descending
+
+        # Map sort_by parameter to actual model fields
+        sort_fields = {
+            'caseNumber': 'caseNumber',
+            'timestamp': 'timestamp',
+        }
+        sort_field = sort_fields.get(sort_by, 'timestamp') # Default to timestamp if invalid
+
+        if order == 'desc':
+            sort_field = '-' + sort_field
+
+        self.ordering = [sort_field] # Set the ordering for the ListView
+
+        return queryset.order_by(*self.ordering)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['cities'] = City.objects.all()
+        context['users'] = CustomUser.objects.all()
+        context['selected_city'] = self.request.GET.get('city', '')
+        context['selected_user'] = self.request.GET.get('user', '')
+        context['search_query'] = self.request.GET.get('q', '')
+        context['sort_by'] = self.request.GET.get('sort_by', 'timestamp')
+        context['order'] = self.request.GET.get('order', 'desc')
+        context['page_size'] = int(self.request.GET.get('page_size', self.paginate_by))
+        return context
 
 class CaseDetailView(LoginRequiredMixin, DetailView):
     model = Cases
@@ -50,6 +126,10 @@ class CaseCreateView(LoginRequiredMixin, CreateView):
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest' or self.request.GET.get('is_iframe'):
             return render(self.request, 'cases/case_form_success.html', {'case_id': form.instance.id})
         return response
+
+    def form_invalid(self, form):
+        messages.error(self.request, "建立案件失敗，請檢查輸入。")
+        return super().form_invalid(form)
 
 class CaseUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Cases

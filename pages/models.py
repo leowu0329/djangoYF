@@ -8,8 +8,8 @@ from decimal import Decimal, InvalidOperation, DivisionByZero
 class Cases(models.Model):
   caseNumber=models.CharField(u'案號(*)',max_length=100)
   company=models.CharField(u'所屬公司',max_length=50,null=True,blank=True)
-  city=models.CharField(u'縣市',max_length=50,null=True,blank=True)
-  township=models.CharField(u'鄉鎮區里',max_length=50,null=True,blank=True)
+  city=models.ForeignKey('City', on_delete=models.SET_NULL, null=True, blank=True, verbose_name=u'縣市')
+  township=models.ForeignKey('Township', on_delete=models.SET_NULL, null=True, blank=True, verbose_name=u'鄉鎮區里')
   bigSection=models.CharField(u'段號',max_length=10,null=True,blank=True)
   smallSection=models.CharField(u'小段',max_length=10,null=True,blank=True)
   village=models.CharField(u'村里',max_length=100,null=True,blank=True)
@@ -33,8 +33,8 @@ class Cases(models.Model):
 
   def fullAddress(self):
     address_parts = [
-        self.city,
-        self.township,
+        self.city.name if self.city else '',
+        self.township.name if self.township else '',
         self.village,
         self.neighbor,
         self.street,
@@ -44,7 +44,37 @@ class Cases(models.Model):
         self.number,
         self.Floor
     ]
-    return ''.join(filter(None, address_parts))
+    # Filter out empty strings and the string 'NULL'
+    return ''.join(filter(lambda x: x and x.strip().upper() != 'NULL', address_parts))
+
+
+class City(models.Model):
+  name = models.CharField(u'城市',max_length=30)
+
+  def __str__(self):
+    return self.name
+
+  class Meta:
+    # managed = True
+    db_table = 'yfcase_city'
+
+class Township(models.Model):
+  city = models.ForeignKey(City, on_delete=models.CASCADE)
+  name = models.CharField(u'鄉鎮',max_length=30)
+  zip_code = models.CharField(u'郵遞區號',max_length=30)
+  district_court = models.CharField(u'地方法院',max_length=30)
+  land_office  = models.CharField(u'地政事務所',max_length=30)
+  finance_and_tax_bureau = models.CharField(u'財政稅務局',max_length=30)
+  police_station = models.CharField(u'警察局',max_length=30)
+  irs = models.CharField(u'國稅局',max_length=30)
+  home_office = models.CharField(u'戶政事務所',max_length=30)
+
+  def __str__(self):
+    return self.name
+
+  class Meta:
+    # managed = True
+    db_table = 'yfcase_township'
 
 
 class Land(models.Model):
@@ -166,7 +196,7 @@ class Result(models.Model):
     ("遭優購", "遭優購"),
     ("無人優購", "無人優購")
   ]
-  
+
   cases = models.ForeignKey(Cases, related_name='results', on_delete=models.CASCADE, verbose_name=u'案件')
   stopBuyDate = models.DateField(u'應買止日', null=True, blank=True)
   actionResult = models.CharField(u'執行結果', max_length=20, null=True, blank=True, choices=ACTION_RESULT_CHOICES)
@@ -304,7 +334,7 @@ class Auction(models.Model):
         self.pingPrice = (self.floorPrice / total_calculated_area).quantize(Decimal('1'))
       else:
         self.pingPrice = Decimal('0')
-      
+
       # Replace the existing CP calculation with the new property
       self.CP = self.calculated_cp_value
 

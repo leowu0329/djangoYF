@@ -36,7 +36,7 @@ class ProfileResource(resources.ModelResource):
         skip_unchanged = True
         report_skipped = True
         import_id_fields = ['user']
-        export_order = ('id', 'user', 'role', 'work_area', 'created_at', 'updated_at')
+        export_order = "__all__"
 
 # Profile 內聯管理
 class ProfileInline(admin.StackedInline):

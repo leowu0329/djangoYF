@@ -1,5 +1,5 @@
 from django import forms
-from .models import Cases, Land, Build, Person, Survey, FinalDecision, Result, ObjectBuild, Bouns, Auction
+from .models import Cases, Land, Build, Person, Survey, FinalDecision, Result, ObjectBuild, Bouns, Auction, City, Township
 
 COMPANY_CHOICES = [
 	("揚富開發有限公司", "揚富開發有限公司"),
@@ -88,6 +88,35 @@ class CasesForm(forms.ModelForm):
 		widget=forms.Select(attrs={"class": "form-select"}),
 		label='案件狀態',
 	)
+
+	city = forms.ModelChoiceField(
+		queryset=City.objects.all(),
+		required=False,
+		widget=forms.Select(attrs={"class": "form-select"}),
+		label='縣市',
+	)
+
+	township = forms.ModelChoiceField(
+		queryset=Township.objects.all(), # Initial queryset, will be filtered by JS
+		required=False,
+		widget=forms.Select(attrs={"class": "form-select"}),
+		label='鄉鎮區里',
+	)
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+		city_id = None
+		if self.instance and self.instance.city: # For existing instances, get initial city from instance
+			city_id = self.instance.city.id
+
+		if self.is_bound: # If form is submitted, use data from POST
+			city_id = self.data.get('city')
+
+		if city_id:
+			self.fields['township'].queryset = Township.objects.filter(city_id=city_id)
+		else:
+			self.fields['township'].queryset = Township.objects.all() # Or Township.objects.none() if no city is selected initially
 
 	class Meta:
 		model = Cases
