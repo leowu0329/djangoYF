@@ -12,6 +12,16 @@ class XLSXExportMixin:
     def get_export_formats(self):
         return [XLSX]  # 只返回 XLSX 格式
 
+# 確保導入正確的格式類（用於其他可能需要的地方）
+try:
+    from tablib.formats import JSONFormat, CSVFormat, XLSXFormat
+except ImportError:
+    # 備用方案：使用格式註冊表
+    from tablib.formats import registry
+    JSONFormat = registry.get_format('json')
+    CSVFormat = registry.get_format('csv')
+    XLSXFormat = registry.get_format('xlsx')
+
 # CustomUser 資源類別
 class CustomUserResource(resources.ModelResource):
     class Meta:

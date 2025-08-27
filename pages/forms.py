@@ -3,7 +3,7 @@ from .models import Cases, Land, Build, Person, Survey, FinalDecision, Result, O
 
 COMPANY_CHOICES = [
 	("揚富開發有限公司", "揚富開發有限公司"),
-	("鉅汱開發有限公司", "鉅汱開發有限公司"),
+	("鉅鈦開發有限公司", "鉅鈦開發有限公司"),
 ]
 
 STATUS_CHOICES = [
@@ -67,6 +67,7 @@ WORK_AREA_CHOICES = [
 ]
 
 FINAL_DECISION_CHOICES = [
+	("未判定", "未判定"),
 	("1拍", "1拍"),
 	("2拍", "2拍"),
 	("3拍", "3拍"),
@@ -283,13 +284,14 @@ class ObjectBuildForm(forms.ModelForm):
 		required=False,
 		initial='自訂',
 	)
+	transactionDate = forms.DateField(widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}), label='成交日期', required=False)
+
 	class Meta:
 		model = ObjectBuild
 		fields = ["type", "address", "url", "houseAge", "transactionDate", "floorHeight", "totalPrice", "buildArea", "subBuildArea", "calculate", "cases"]
 		widgets = {
 			"cases": forms.HiddenInput(),
 			"type": forms.Select(attrs={"class": "form-control"}),
-			"transactionDate": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
 		}
 
 class BounsForm(forms.ModelForm):

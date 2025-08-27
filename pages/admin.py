@@ -1,8 +1,26 @@
 from django.contrib import admin
 from django import forms
 from import_export.admin import ImportExportModelAdmin
-from .models import Cases, Land, Build, Result, City, Township
+from import_export.formats import base_formats # Import base_formats
+from import_export import resources, fields, widgets # Import resources, fields, and widgets
+from .models import Cases, Land, Build, Result, City, Township, Person, Survey, FinalDecision, ObjectBuild, Bouns, Auction
 from .forms import TYPE_USE_CHOICES, USE_PARTITION_CHOICES
+
+# 確保導入正確的格式類（備用方案）
+try:
+    from tablib.formats import JSONFormat, CSVFormat, XLSXFormat
+except ImportError:
+    # 如果直接導入失敗，使用格式註冊表
+    try:
+        from tablib.formats import registry
+        JSONFormat = registry.get_format('json')
+        CSVFormat = registry.get_format('csv')
+        XLSXFormat = registry.get_format('xlsx')
+    except ImportError:
+        # 如果所有方法都失敗，使用 django-import-export 的格式
+        JSONFormat = base_formats.JSON
+        CSVFormat = base_formats.CSV
+        XLSXFormat = base_formats.XLSX
 
 class LandInline(admin.TabularInline):
     model = Land
@@ -28,11 +46,23 @@ class CasesAdmin(ImportExportModelAdmin):
     list_filter = ("company", "status", "city")
     inlines = [LandInline, BuildInline]
 
+    def get_import_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]  # 使用 django-import-export 的格式類
+
+    def get_export_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]  # 使用 django-import-export 的格式類
+
 @admin.register(Land)
 class LandAdmin(ImportExportModelAdmin):
     list_display = ("cases", "landNumber", "area", "holdingPointPersonal", "holdingPointAll", "calculatedArea", "updated")
     search_fields = ("landNumber", "cases__caseNumber")
     list_filter = ("cases",)
+
+    def get_import_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+    def get_export_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
 
 @admin.register(Build)
 class BuildAdmin(ImportExportModelAdmin):
@@ -41,20 +71,124 @@ class BuildAdmin(ImportExportModelAdmin):
     search_fields = ("buildNumber", "cases__caseNumber")
     list_filter = ("cases", "typeUse", "usePartition")
 
+    def get_import_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+    def get_export_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
 
 @admin.register(Result)
-class ResultAdmin(admin.ModelAdmin):
+class ResultAdmin(ImportExportModelAdmin):
     list_display = ("cases", "stopBuyDate", "actionResult", "bidAuctionTime", "bidMoney", "objectNumber", "updated")
     search_fields = ("objectNumber", "cases__caseNumber")
     list_filter = ("cases", "actionResult", "stopBuyDate")
+
+    def get_import_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+    def get_export_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
 
 @admin.register(City)
 class CityAdmin(ImportExportModelAdmin):
     list_display = ("name",)
     search_fields = ("name",)
 
+    def get_import_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+    def get_export_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
 @admin.register(Township)
 class TownshipAdmin(ImportExportModelAdmin):
     list_display = ("name", "city", "zip_code", "district_court")
     search_fields = ("name", "city__name", "zip_code")
     list_filter = ("city",)
+
+    def get_import_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+    def get_export_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+@admin.register(Person)
+class PersonAdmin(ImportExportModelAdmin):
+    list_display = ('cases', 'name', 'type', 'phone', 'created', 'updated')
+    search_fields = ('name', 'cases__caseNumber', 'phone')
+    list_filter = ('type', 'cases')
+
+    def get_import_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+    def get_export_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+@admin.register(Survey)
+class SurveyAdmin(ImportExportModelAdmin):
+    list_display = ('cases', 'firstDay', 'secondDay', 'foreclosureAnnouncementLink', 'house988Link', 'objectPhotoLink', 'created', 'updated')
+    search_fields = ('cases__caseNumber', 'firstDay', 'secondDay')
+    list_filter = ('cases', 'firstDay', 'secondDay')
+
+    def get_import_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+    def get_export_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+class FinalDecisionResource(resources.ModelResource):
+    date = fields.Field(attribute='date', column_name='日期', widget=widgets.DateWidget(format='%Y-%m-%d'))
+
+    class Meta:
+        model = FinalDecision
+        fields = ('id', 'cases', 'finalDecision', 'type', 'name', 'date', 'workArea', 'remark', 'created', 'updated')
+        export_order = ('id', 'cases', 'finalDecision', 'type', 'name', 'date', 'workArea', 'remark', 'created', 'updated')
+
+@admin.register(FinalDecision)
+class FinalDecisionAdmin(ImportExportModelAdmin):
+    resource_class = FinalDecisionResource
+    list_display = ('cases', 'finalDecision', 'type', 'name', 'date', 'workArea', 'created', 'updated')
+    search_fields = ('cases__caseNumber', 'finalDecision', 'name', 'workArea')
+    list_filter = ('finalDecision', 'type', 'workArea', 'cases')
+
+    def get_import_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+    def get_export_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+@admin.register(ObjectBuild)
+class ObjectBuildAdmin(ImportExportModelAdmin):
+    list_display = ('cases', 'type', 'address', 'houseAge', 'totalPrice', 'buildArea', 'unitPrice', 'calculate', 'created', 'updated')
+    search_fields = ('cases__caseNumber', 'address', 'type')
+    list_filter = ('type', 'cases')
+
+    def get_import_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+    def get_export_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+@admin.register(Bouns)
+class BounsAdmin(ImportExportModelAdmin):
+    list_display = ('objectbuild', 'bounsPerson', 'bounsRate', 'bounsReason', 'updated', 'timestamp')
+    search_fields = ('objectbuild__cases__caseNumber', 'bounsPerson', 'bounsReason')
+    list_filter = ('bounsPerson', 'objectbuild__cases')
+
+    def get_import_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+    def get_export_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+@admin.register(Auction)
+class AuctionAdmin(ImportExportModelAdmin):
+    list_display = ('cases', 'type', 'auctionDate', 'floorPrice', 'pingPrice', 'CP', 'created', 'updated')
+    search_fields = ('cases__caseNumber', 'type')
+    list_filter = ('type', 'auctionDate', 'cases')
+
+    def get_import_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+    def get_export_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]

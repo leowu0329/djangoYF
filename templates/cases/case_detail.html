@@ -19,17 +19,17 @@
         </li>
         <li class="nav-item" role="presentation">
           <button class="nav-link" id="lands-tab" data-bs-toggle="tab" data-bs-target="#lands" type="button" role="tab" aria-controls="lands" aria-selected="false">
-            <i class="bi bi-map"></i> 土地
+            <i class="bi bi-map"></i> 土地資訊：{{ case.total_calculated_land_area_display }}
           </button>
         </li>
         <li class="nav-item" role="presentation">
           <button class="nav-link" id="builds-tab" data-bs-toggle="tab" data-bs-target="#builds" type="button" role="tab" aria-controls="builds" aria-selected="false">
-            <i class="bi bi-building"></i> 建物
+            <i class="bi bi-building"></i> 建物資訊：{{ case.total_calculated_build_area_display }}
           </button>
         </li>
         <li class="nav-item" role="presentation">
           <button class="nav-link" id="people-tab" data-bs-toggle="tab" data-bs-target="#people" type="button" role="tab" aria-controls="people" aria-selected="false">
-            <i class="bi bi-people"></i> 人員
+            <i class="bi bi-people"></i> 人員資訊：{{ case.people_summary_display }}
           </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -65,8 +65,17 @@
           <ul class="list-group list-group-flush">
             <li class="list-group-item"><strong>公司:</strong> {{ case.company }}</li>
             <li class="list-group-item"><strong>地址:</strong> {{ case.fullAddress }}</li>
-            <li class="list-group-item"><strong>狀態:</strong> {{ case.status }}</li>
-            <li class="list-group-item"><strong>負責人:</strong> {{ case.user.username }}</li>
+            <li class="list-group-item">
+              <strong>狀態:</strong> 
+              {% if case.status == "在途" %}
+                <span class="badge rounded-pill bg-warning text-dark fs-5">{{ case.status }}</span>
+              {% elif case.status == "結案" %}
+                <span class="badge rounded-pill bg-success fs-5">{{ case.status }}</span>
+              {% else %}
+                <span class="badge rounded-pill bg-secondary fs-5">{{ case.status }}</span>
+              {% endif %}
+            </li>
+            <li class="list-group-item"><strong>負責人:</strong> {{ case.user.profile.nickname|default:case.user.username }}</li>
           </ul>
 
           <!-- Actions -->
@@ -106,9 +115,9 @@
                     <tr>
                       <td>
                         {% if land.url %}
-                          <a href="{{ land.url }}" target="_blank" class="text-decoration-none">{{ land.landNumber }}</a>
+                          <a href="{{ land.url }}" target="_blank" class="text-decoration-none">{{ land.formatted_landNumber }}</a>
                         {% else %}
-                          {{ land.landNumber }}
+                          {{ land.formatted_landNumber }}
                         {% endif %}
                       </td>
                       <td>{{ land.area }}</td>
@@ -163,9 +172,9 @@
                     <tr>
                       <td>
                         {% if build.url %}
-                          <a href="{{ build.url }}" target="_blank" class="text-decoration-none">{{ build.buildNumber }}</a>
+                          <a href="{{ build.url }}" target="_blank" class="text-decoration-none">{{ build.formatted_buildNumber }}</a>
                         {% else %}
-                          {{ build.buildNumber }}
+                          {{ build.formatted_buildNumber }}
                         {% endif %}
                       </td>
                       <td>{{ build.area }}</td>
@@ -268,8 +277,8 @@
                 <tbody>
                   {% for s in case.surveys.all %}
                     <tr>
-                      <td>{{ s.firstDay }}</td>
-                      <td>{{ s.secondDay }}</td>
+                      <td>{{ s.firstDay|date:"Y-m-d"|default:"—" }}</td>
+                      <td>{{ s.secondDay|date:"Y-m-d"|default:"—" }}</td>
                       <td>{% if s.foreclosureAnnouncementLink %}<a href="{{ s.foreclosureAnnouncementLink }}" target="_blank">連結</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
                       <td>{% if s.house988Link %}<a href="{{ s.house988Link }}" target="_blank">連結</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
                       <td>{% if s.objectPhotoLink %}<a href="{{ s.objectPhotoLink }}" target="_blank">連結</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
@@ -322,7 +331,7 @@
                       <td>{{ fd.finalDecision }}</td>
                       <td>{{ fd.type }}</td>
                       <td>{{ fd.name }}</td>
-                      <td>{{ fd.date }}</td>
+                      <td>{{ fd.date|date:"Y-m-d"|default:"—" }}</td>
                       <td>{{ fd.workArea }}</td>
                       <td class="text-truncate" style="max-width: 420px;">{{ fd.remark }}</td>
                       <td class="text-end">
@@ -365,11 +374,11 @@
                 <tbody>
                   {% for result in case.results.all %}
                     <tr>
-                      <td>{{ result.stopBuyDate|date:"Y-m-d" }}</td>
-                      <td>{{ result.actionResult }}</td>
-                      <td>{{ result.bidAuctionTime }}</td>
-                      <td>{{ result.bidMoney }}</td>
-                      <td>{{ result.objectNumber }}</td>
+                      <td>{{ result.stopBuyDate|date:"Y-m-d"|default:"—" }}</td>
+                      <td>{{ result.actionResult|default:"—" }}</td>
+                      <td>{{ result.bidAuctionTime|default:"—" }}</td>
+                      <td>{{ result.bidMoney|default:"—" }}</td>
+                      <td>{{ result.objectNumber|default:"—" }}</td>
                       <td class="text-end">
                         <a href="{% url 'result_update' result.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
                         <a href="{% url 'result_delete' result.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
@@ -489,9 +498,9 @@
                       <td>{{ auction.pingPrice }}</td>
                       <td>
                         {% if auction.type == '1拍' and auction.calculated_cp_value > 0.92 or auction.type == '2拍' and auction.calculated_cp_value > 1.15 or auction.type == '3拍' and auction.calculated_cp_value > 1.44 or auction.type == '4拍' and auction.calculated_cp_value > 1.80 %}
-                          <span class="bg-white text-success fw-bold">底價: {{ auction.floorPrice }} / CP: {{ auction.calculated_cp_value }} ({{ auction.objectbuild_count }}筆, 平均: {{ auction.avg_objectbuild_calculate_display }}) 建議進場</span>
+                          <span class="bg-white text-success fw-bold">{{ auction.calculated_cp_value }} (建議進場)</span>
                         {% else %}
-                          <span class="bg-white text-danger fw-bold">底價: {{ auction.floorPrice }} / CP: {{ auction.calculated_cp_value }} ({{ auction.objectbuild_count }}筆, 平均: {{ auction.avg_objectbuild_calculate_display }}) 不可進場</span>
+                          <span class="bg-white text-danger fw-bold">{{ auction.calculated_cp_value }} (不可進場)</span>
                         {% endif %}
                       </td>
                       <td>{{ auction.click }}</td>

@@ -26,7 +26,7 @@
         <select class="form-select" id="user-select" name="user">
           <option value="">所有負責人</option>
           {% for user in users %}
-            <option value="{{ user.id }}" {% if user.id|stringformat:"s" == selected_user %}selected{% endif %}>{{ user.username }}</option>
+            <option value="{{ user.id }}" {% if user.id|stringformat:"s" == selected_user %}selected{% endif %}>{{ user.profile.nickname|default:user.username }}</option>
           {% endfor %}
         </select>
       </div>
@@ -74,7 +74,7 @@
                 <td><a href="{% url 'case_detail' case.id %}" class="text-decoration-none">{{ case.caseNumber }}</a></td>
                 <td class="text-truncate" style="max-width: 420px;">{{ case.fullAddress }}</td>
                 <td>{{ case.results.last.stopBuyDate|date:"Y-m-d"|default:"—" }}</td>
-                <td>{{ case.user.username|default:"—" }}</td>
+                <td>{{ case.user.profile.nickname|default:case.user.username|default:"—" }}</td>
                 <td>{{ case.finaldecisions.last.finalDecision|default:"—" }}</td>
                 <td>{{ case.results.last.actionResult|default:"—" }}</td>
                 <td>

@@ -147,7 +147,7 @@ class CaseUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return context
 
     def form_valid(self, form):
-        form.instance.user = self.request.user
+        # form.instance.user = self.request.user # 移除或註解此行以避免更新負責人
         messages.success(self.request, f"案件 '{form.instance.caseNumber}' 更新成功！")
         response = super().form_valid(form)
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest' or self.request.GET.get('is_iframe'):
@@ -156,7 +156,7 @@ class CaseUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
     def test_func(self):
         case = self.get_object()
-        if self.request.user == case.user:
+        if self.request.user == case.user or self.request.user.is_staff:
             return True
         return False
 
@@ -168,7 +168,7 @@ class CaseDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
     def test_func(self):
         case = self.get_object()
-        if self.request.user == case.user:
+        if self.request.user == case.user or self.request.user.is_staff:
             return True
         return False
 
@@ -216,13 +216,14 @@ class LandDeleteView(LoginRequiredMixin, DeleteView):
     model = Land
     template_name = 'lands/land_confirm_delete.html'
 
+    def get_success_url(self):
+        return reverse('case_detail', args=[self.object.cases.pk])
+
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
         case_id = self.object.cases_id
         messages.success(self.request, "土地資料已刪除！")
-        response = super().delete(request, *args, **kwargs)
-        self.success_url = reverse_lazy('case_detail', args=[case_id])
-        return response
+        return super().delete(request, *args, **kwargs)
 
 # Build CRUD
 class BuildCreateView(LoginRequiredMixin, CreateView):
@@ -310,13 +311,14 @@ class PersonDeleteView(LoginRequiredMixin, DeleteView):
     model = Person
     template_name = 'people/person_confirm_delete.html'
 
+    def get_success_url(self):
+        return reverse('case_detail', args=[self.object.cases.pk])
+
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
         case_id = self.object.cases_id
         messages.success(self.request, "人員資料已刪除！")
-        response = super().delete(request, *args, **kwargs)
-        self.success_url = reverse_lazy('case_detail', args=[case_id])
-        return response
+        return super().delete(request, *args, **kwargs)
 
 # Survey CRUD
 class SurveyCreateView(LoginRequiredMixin, CreateView):

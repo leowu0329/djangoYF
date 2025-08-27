@@ -31,6 +31,54 @@ class Cases(models.Model):
   def get_absolute_url(self):
     return reverse('case_detail', args=[str(self.id)])
 
+  def save(self, *args, **kwargs):
+    # 處理 bigSection
+    if self.bigSection:
+      bigSection = str(self.bigSection)
+      if "段" not in bigSection:
+        self.bigSection = bigSection + "段"
+    # 處理 smallSection
+    if self.smallSection:
+      smallSection = str(self.smallSection)
+      if "小段" not in smallSection:
+        self.smallSection = smallSection + "小段"
+    # 處理 village
+    if self.village:
+      village = str(self.village)
+      if "村" not in village and "里" not in village:
+        self.village = village + "里"
+    # 處理 neighbor
+    if self.neighbor:
+      neighbor = str(self.neighbor)
+      if "鄰" not in neighbor:
+        self.neighbor = neighbor + "鄰"
+    # 處理 street
+    if self.street:
+      street = str(self.street)
+      if "街" not in street and "路" not in street:
+        self.street = street + "路"
+    # 處理 section
+    if self.section:
+      section = str(self.section)
+      if "段" not in section:
+        self.section = section + "段"
+    # 處理 lane
+    if self.lane:
+      lane = str(self.lane)
+      if "巷" not in lane:
+        self.lane = lane + "巷"
+    # 處理 alley
+    if self.alley:
+      alley = str(self.alley)
+      if "弄" not in alley:
+        self.alley = alley + "弄"
+    # 處理 number
+    if self.number:
+      number = str(self.number)
+      if "號" not in number:
+        self.number = number + "號"
+    super().save(*args, **kwargs)
+
   def fullAddress(self):
     address_parts = [
         self.city.name if self.city else '',
@@ -47,6 +95,28 @@ class Cases(models.Model):
     # Filter out empty strings and the string 'NULL'
     return ''.join(filter(lambda x: x and x.strip().upper() != 'NULL', address_parts))
 
+  @property
+  def total_calculated_land_area_display(self):
+    from django.db.models import Sum # Import Sum here
+    total_calculated_area = self.lands.aggregate(Sum('calculatedArea'))['calculatedArea__sum']
+    if total_calculated_area is None:
+      total_calculated_area = Decimal('0')
+    return f"合計：{total_calculated_area.quantize(Decimal('0.01'))} 坪"
+
+  @property
+  def total_calculated_build_area_display(self):
+    from django.db.models import Sum # Import Sum here
+    total_calculated_area = self.builds.aggregate(Sum('calculatedArea'))['calculatedArea__sum']
+    if total_calculated_area is None:
+      total_calculated_area = Decimal('0')
+    return f"合計：{total_calculated_area.quantize(Decimal('0.01'))} 坪"
+
+  @property
+  def people_summary_display(self):
+    from django.db.models import Count # Import Count here
+    debtors_count = self.people.filter(type='債務人').count()
+    creditors_count = self.people.filter(type='債權人').count()
+    return f"債務人({debtors_count})/債權人({creditors_count})"
 
 class City(models.Model):
   name = models.CharField(u'城市',max_length=30)
@@ -89,6 +159,12 @@ class Land(models.Model):
   created = models.DateTimeField(u'建立時間', auto_now=False, auto_now_add=True)
   updated = models.DateTimeField(u'更新時間', auto_now=True, auto_now_add=False)
 
+  @property
+  def formatted_landNumber(self):
+    if self.cases and self.cases.bigSection:
+      return f"{self.cases.bigSection}{self.landNumber}"
+    return self.landNumber
+
   def save(self, *args, **kwargs):
     try:
       personal = Decimal(self.holdingPointPersonal or 0)
@@ -121,6 +197,12 @@ class Build(models.Model):
   created = models.DateTimeField(u'建立時間', auto_now=False, auto_now_add=True)
   updated = models.DateTimeField(u'更新時間', auto_now=True, auto_now_add=False)
 
+  @property
+  def formatted_buildNumber(self):
+    if self.cases and self.cases.bigSection:
+      return f"{self.cases.bigSection}{self.buildNumber}"
+    return self.buildNumber
+
   def save(self, *args, **kwargs):
     try:
       personal = Decimal(self.holdingPointPersonal or 0)
@@ -130,6 +212,8 @@ class Build(models.Model):
         base = (personal / total) * area_m2 * Decimal('0.3025')
         if (self.typeUse or '') == '增建-持分後坪數打對折':
           base = base / Decimal('2')
+        elif (self.typeUse or '') == '公設':
+          base = base / Decimal('4')
         self.calculatedArea = base
       else:
         self.calculatedArea = Decimal('0')
@@ -145,7 +229,7 @@ class Person(models.Model):
   cases = models.ForeignKey(Cases, related_name='people', on_delete=models.CASCADE, verbose_name=u'案件')
   name = models.CharField(u'姓名', max_length=30)
   type = models.CharField(u'分類', max_length=30)
-  phone = models.CharField(u'電話', max_length=30)
+  phone = models.CharField(u'電話', max_length=30, null=True, blank=True)
   created = models.DateTimeField(u'建立時間', auto_now=False, auto_now_add=True)
   updated = models.DateTimeField(u'更新時間', auto_now=True, auto_now_add=False)
 
@@ -155,8 +239,8 @@ class Person(models.Model):
 
 class Survey(models.Model):
   cases = models.ForeignKey(Cases, related_name='surveys', on_delete=models.CASCADE, verbose_name=u'案件')
-  firstDay = models.CharField(u'初勘日', max_length=100, null=True, blank=True)
-  secondDay = models.CharField(u'會勘日', max_length=100, null=True, blank=True)
+  firstDay = models.DateField(u'初勘日', null=True, blank=True)
+  secondDay = models.DateField(u'會勘日', null=True, blank=True)
   foreclosureAnnouncementLink = models.URLField(u'法拍公告(證物三)', max_length=1000, null=True, blank=True)
   house988Link = models.URLField(u'998連結', max_length=1000, null=True, blank=True)
   objectPhotoLink = models.URLField(u'物件照片(證物四)', max_length=1000, null=True, blank=True)
@@ -178,7 +262,7 @@ class FinalDecision(models.Model):
   remark = models.CharField(u'備註', max_length=3000, null=True, blank=True)
   type = models.CharField(u'分類', max_length=3000, null=True, blank=True)
   name = models.CharField(u'人員', max_length=10, null=True, blank=True)
-  date = models.CharField(u'日期', max_length=10, null=True, blank=True)
+  date = models.DateField(u'日期', null=True, blank=True)
   workArea = models.CharField(u'工作轄區', max_length=10, null=True, blank=True)
   created = models.DateTimeField(u'建立時間', auto_now=False, auto_now_add=True)
   updated = models.DateTimeField(u'更新時間', auto_now=True, auto_now_add=False)

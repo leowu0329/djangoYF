@@ -18,6 +18,7 @@ class Profile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
     
     # Personal Information
+    nickname = models.CharField(max_length=100, verbose_name='暱稱') # 新增的暱稱欄位
     personal_id = models.CharField(max_length=20, blank=True, null=True)
     birthday = models.DateField(blank=True, null=True)
     
