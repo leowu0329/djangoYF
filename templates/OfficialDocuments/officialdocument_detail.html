@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h2>Official Document Details</h2>
+  <p><strong>Type:</strong> {{ officialdocument.type }}</p>
+  <p><strong>Stock:</strong> {{ officialdocument.stock }}</p>
+  <p><strong>Tel:</strong> {{ officialdocument.tel }}</p>
+  <p><strong>Ext:</strong> {{ officialdocument.ext }}</p>
+  <p><strong>Created:</strong> {{ officialdocument.created }}</p>
+  <p><strong>Updated:</strong> {{ officialdocument.updated }}</p>
+  <a href="{% url 'officialdocument_update' officialdocument.pk %}">Edit</a>
+  <a href="{% url 'officialdocument_delete' officialdocument.pk %}">Delete</a>
+  <a href="{% url 'case_detail' officialdocument.cases.pk %}">Back to Case Detail</a>
+{% endblock %}

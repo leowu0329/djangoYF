@@ -1,5 +1,5 @@
 from django import forms
-from .models import Cases, Land, Build, Person, Survey, FinalDecision, Result, ObjectBuild, Bouns, Auction, City, Township
+from .models import Cases, Land, Build, Person, Survey, FinalDecision, Result, ObjectBuild, Bouns, Auction, City, Township, OfficialDocuments
 
 COMPANY_CHOICES = [
 	("揚富開發有限公司", "揚富開發有限公司"),
@@ -323,3 +323,27 @@ class AuctionForm(forms.ModelForm):
 			'caseCount': forms.NumberInput(attrs={'class': 'form-control'}),
 			'margin': forms.NumberInput(attrs={'class': 'form-control'}),
 		}
+
+
+class OfficialDocumentForm(forms.ModelForm):
+    type = forms.ChoiceField(
+        choices=OfficialDocuments.TYPE_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select"}),
+        label='案別',
+    )
+    stock = forms.ChoiceField(
+        choices=OfficialDocuments.STOCK_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select"}),
+        label='股別',
+    )
+    class Meta:
+        model = OfficialDocuments
+        fields = ['cases', 'type', 'stock', 'docNumber', 'tel', 'ext']
+        widgets = {
+            'cases': forms.HiddenInput(),
+            'tel': forms.TextInput(attrs={'class': 'form-control'}),
+            'ext': forms.TextInput(attrs={'class': 'form-control'}),
+            'docNumber': forms.TextInput(attrs={'class': 'form-control'}),
+        }

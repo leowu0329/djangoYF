@@ -6,10 +6,10 @@ from django.db.models import Q # Import Q object for complex queries
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
 from django.views.decorators.clickjacking import xframe_options_exempt
-from .models import Cases, Land, Build, Person, Survey, FinalDecision, Result, ObjectBuild, Bouns, Auction, City, Township
+from .models import Cases, Land, Build, Person, Survey, FinalDecision, Result, ObjectBuild, Bouns, Auction, City, Township, OfficialDocuments
 from users.models import CustomUser # Import CustomUser model
-from .forms import CasesForm, LandForm, BuildForm, PersonForm, SurveyForm, FinalDecisionForm, ResultForm, ObjectBuildForm, BounsForm, AuctionForm
-from django.http import JsonResponse
+from .forms import CasesForm, LandForm, BuildForm, PersonForm, SurveyForm, FinalDecisionForm, ResultForm, ObjectBuildForm, BounsForm, AuctionForm, OfficialDocumentForm
+from django.http import JsonResponse, HttpResponseRedirect
 
 @login_required  # 這個裝飾器會自動檢查登入狀態
 def home_page(request):
@@ -102,6 +102,7 @@ class CaseDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         case = self.get_object()
+        context['officialdocuments'] = case.officialdocuments.all()
         return context
 
 class CaseCreateView(LoginRequiredMixin, CreateView):
@@ -654,4 +655,70 @@ class AuctionDeleteView(LoginRequiredMixin, DeleteView):
         response = super().delete(request, *args, **kwargs)
         self.success_url = reverse_lazy('case_detail', args=[case_id])
         return response
+
+# OfficialDocument CRUD
+class OfficialDocumentCreateView(LoginRequiredMixin, CreateView):
+    model = OfficialDocuments
+    form_class = OfficialDocumentForm
+    template_name = 'OfficialDocuments/officialdocument_form.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.case = get_object_or_404(Cases, pk=kwargs.get('case_pk'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['case'] = self.case
+        return context
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['initial'] = {'cases': self.case.id}
+        return kwargs
+
+    def form_valid(self, form):
+        form.instance.cases = self.case
+        messages.success(self.request, "公文資料已新增！")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('case_detail', args=[self.case.pk])
+
+class OfficialDocumentDetailView(LoginRequiredMixin, DetailView):
+    model = OfficialDocuments
+    template_name = 'OfficialDocuments/officialdocument_detail.html'
+    context_object_name = 'officialdocument'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+class OfficialDocumentUpdateView(LoginRequiredMixin, UpdateView):
+    model = OfficialDocuments
+    form_class = OfficialDocumentForm
+    template_name = 'OfficialDocuments/officialdocument_form.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['case'] = self.object.cases
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, "公文資料已更新！")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('case_detail', args=[self.object.cases.pk])
+
+class OfficialDocumentDeleteView(LoginRequiredMixin, DeleteView):
+    model = OfficialDocuments
+    template_name = 'OfficialDocuments/officialdocument_confirm_delete.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        self.case_pk = self.object.cases.pk
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return reverse('case_detail', args=[self.case_pk])
 

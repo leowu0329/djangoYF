@@ -57,6 +57,11 @@
             <i class="bi bi-gavel"></i> 拍賣
           </button>
         </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="officialdocuments-tab" data-bs-toggle="tab" data-bs-target="#officialdocuments" type="button" role="tab" aria-controls="officialdocuments" aria-selected="false">
+            <i class="bi bi-file-text"></i> 公文
+          </button>
+        </li>
       </ul>
 
       <div class="tab-content pt-3" id="caseTabContent">
@@ -532,6 +537,54 @@
             </div>
           {% else %}
             <div class="alert alert-info">無拍賣記錄。</div>
+          {% endif %}
+        </div>
+
+        <!-- Official Documents Tab -->
+        <div class="tab-pane fade" id="officialdocuments" role="tabpanel" aria-labelledby="officialdocuments-tab">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">公文</h5>
+            <a href="{% url 'officialdocument_create' case_pk=case.id %}" class="btn btn-sm btn-success">
+              <i class="bi bi-plus-circle"></i> 新增公文
+            </a>
+          </div>
+          {% if case.officialdocuments.all %}
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>案別</th>
+                    <th>股別</th>
+                    <th>案號</th>
+                    <th>電話</th>
+                    <th>分機</th>
+                    <th>建立時間</th>
+                    <th class="text-end">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for doc in case.officialdocuments.all %}
+                    <tr>
+                      <td>{{ doc.type }}</td>
+                      <td>{{ doc.stock }}</td>
+                      <td>{{ doc.docNumber }}</td>
+                      <td>{{ doc.tel }}</td>
+                      <td>{{ doc.ext }}</td>
+                      <td>{{ doc.created|date:"Y-m-d H:i" }}</td>
+                      <td class="text-end">
+                        <a href="{% url 'officialdocument_detail' doc.id %}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
+                        <a href="{% url 'officialdocument_update' doc.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'officialdocument_delete' doc.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted">無公文記錄。</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="alert alert-info">無公文記錄。</div>
           {% endif %}
         </div>
       </div>

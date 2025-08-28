@@ -3,7 +3,7 @@ from django import forms
 from import_export.admin import ImportExportModelAdmin
 from import_export.formats import base_formats # Import base_formats
 from import_export import resources, fields, widgets # Import resources, fields, and widgets
-from .models import Cases, Land, Build, Result, City, Township, Person, Survey, FinalDecision, ObjectBuild, Bouns, Auction
+from .models import Cases, Land, Build, Result, City, Township, Person, Survey, FinalDecision, ObjectBuild, Bouns, Auction, OfficialDocuments
 from .forms import TYPE_USE_CHOICES, USE_PARTITION_CHOICES
 
 # 確保導入正確的格式類（備用方案）
@@ -186,6 +186,27 @@ class AuctionAdmin(ImportExportModelAdmin):
     list_display = ('cases', 'type', 'auctionDate', 'floorPrice', 'pingPrice', 'CP', 'created', 'updated')
     search_fields = ('cases__caseNumber', 'type')
     list_filter = ('type', 'auctionDate', 'cases')
+
+    def get_import_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+    def get_export_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+class OfficialDocumentsResource(resources.ModelResource):
+    cases = fields.Field(attribute='cases', column_name='案件編號', widget=widgets.ForeignKeyWidget(Cases, 'caseNumber'))
+
+    class Meta:
+        model = OfficialDocuments
+        fields = ('id', 'cases', 'docNumber', 'type', 'stock', 'tel', 'ext', 'created', 'updated')
+        export_order = ('id', 'cases', 'docNumber', 'type', 'stock', 'tel', 'ext', 'created', 'updated')
+
+@admin.register(OfficialDocuments)
+class OfficialDocumentsAdmin(ImportExportModelAdmin):
+    resource_class = OfficialDocumentsResource
+    list_display = ('cases', 'docNumber', 'type', 'stock', 'tel', 'ext', 'created', 'updated')
+    search_fields = ('cases__caseNumber', 'docNumber', 'type', 'stock')
+    list_filter = ('type', 'stock', 'cases')
 
     def get_import_formats(self):
         return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]

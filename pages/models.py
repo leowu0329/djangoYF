@@ -373,7 +373,7 @@ class ObjectBuild(models.Model):
 
 class Bouns(models.Model):
   objectbuild=models.ForeignKey(ObjectBuild,related_name='bounses',on_delete=models.CASCADE)
-  bounsPerson= models.CharField(u'勘查員',max_length=100,null=True,blank=True)
+  bounsPerson= models.ForeignKey('users.CustomUser', verbose_name='勘查員', on_delete=models.SET_NULL, null=True, blank=True, related_name='bouns_set')
   bounsRate=models.DecimalField(u'加成',default=0,max_digits=4,decimal_places=2,null=True,blank=True)
   bounsReason = models.CharField(u'加成原因',max_length=100,null=True,blank=True)
   updated = models.DateTimeField(u'更新時間',auto_now=True,auto_now_add=False)
@@ -381,20 +381,11 @@ class Bouns(models.Model):
 
   @property
   def display_bouns_person(self):
-    from users.models import CustomUser # Import here to avoid circular dependency
-    print(f"DEBUG: Bouns bounsPerson: {self.bounsPerson}")
-    try:
-      user = CustomUser.objects.get(username=self.bounsPerson)
-      print(f"DEBUG: Found CustomUser: {user.username}")
-      if hasattr(user, 'profile') and user.profile.nickname:
-        print(f"DEBUG: Found nickname: {user.profile.nickname}")
-        return user.profile.nickname
-      else:
-        print(f"DEBUG: No profile or nickname found for user: {user.username}")
-        return self.bounsPerson
-    except CustomUser.DoesNotExist:
-      print(f"DEBUG: CustomUser with username {self.bounsPerson} does not exist.")
-      return self.bounsPerson
+    if self.bounsPerson and hasattr(self.bounsPerson, 'profile') and self.bounsPerson.profile.nickname:
+      return self.bounsPerson.profile.nickname
+    elif self.bounsPerson:
+      return self.bounsPerson.username
+    return ""
 
   def save(self, *args, **kwargs):
     super().save(*args, **kwargs) # Call the original save method
@@ -474,3 +465,32 @@ class Auction(models.Model):
 
   def __str__(self):
     return f"{self.cases.caseNumber} - {self.type or ''} ({self.auctionDate or ''})"
+
+
+class OfficialDocuments(models.Model):
+  TYPE_CHOICES = [
+      ("法拍", "法拍"),
+      ("分割共有物", "分割共有物"),
+      ("不當得利", "不當得利"),
+      ("遷讓房屋", "遷讓房屋"),
+      ("訴訟費用額(利)", "訴訟費用額(利)"),
+      ("訴訟費用額(割)", "訴訟費用額(割)"),
+      ("訴訟費用額(遷)", "訴訟費用額(遷)"),
+      ("強制執行(變價)", "強制執行(變價)"),
+      ("強制執行(清償)", "強制執行(清償)"),
+  ]
+  STOCK_CHOICES = [
+      ("忠", "忠"),
+      ("孝", "孝"),
+  ]
+  cases=models.ForeignKey(Cases,related_name='officialdocuments',on_delete=models.CASCADE)
+  docNumber = models.CharField(u'案號',max_length=100,null=True,blank=True)
+  type = models.CharField(u'案別',max_length=100,null=True,blank=True, choices=TYPE_CHOICES, default="法拍")
+  stock = models.CharField(u'股別',max_length=100,null=True,blank=True, choices=STOCK_CHOICES, default="忠")
+  tel = models.CharField(u'電話',max_length=100,null=True,blank=True)
+  ext = models.CharField(u'分機',max_length=100,null=True,blank=True)
+  created = models.DateTimeField(u'建立時間', auto_now=False, auto_now_add=True)
+  updated = models.DateTimeField(u'更新時間', auto_now=True, auto_now_add=False)
+
+  def __str__(self):
+    return f"{self.cases.caseNumber} - {self.type or ''}"

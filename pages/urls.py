@@ -5,7 +5,8 @@ from .views import (
     CaseDetailView,
     CaseCreateView,
     CaseUpdateView,
-    CaseDeleteView
+    CaseDeleteView,
+    OfficialDocumentCreateView, OfficialDocumentDetailView, OfficialDocumentUpdateView, OfficialDocumentDeleteView
 )
 
 urlpatterns = [
@@ -59,4 +60,10 @@ urlpatterns = [
     path('cases/<int:case_pk>/auctions/new/', views.AuctionCreateView.as_view(), name='auction_create'),
     path('auctions/<int:pk>/update/', views.AuctionUpdateView.as_view(), name='auction_update'),
     path('auctions/<int:pk>/delete/', views.AuctionDeleteView.as_view(), name='auction_delete'),
+
+    # OfficialDocument
+    path('cases/<int:case_pk>/officialdocuments/new/', views.OfficialDocumentCreateView.as_view(), name='officialdocument_create'),
+    path('officialdocuments/<int:pk>/detail/', views.OfficialDocumentDetailView.as_view(), name='officialdocument_detail'),
+    path('officialdocuments/<int:pk>/update/', views.OfficialDocumentUpdateView.as_view(), name='officialdocument_update'),
+    path('officialdocuments/<int:pk>/delete/', views.OfficialDocumentDeleteView.as_view(), name='officialdocument_delete'),
 ]
