@@ -379,6 +379,23 @@ class Bouns(models.Model):
   updated = models.DateTimeField(u'更新時間',auto_now=True,auto_now_add=False)
   timestamp = models.DateTimeField(u'建立時間',auto_now=False,auto_now_add=True)
 
+  @property
+  def display_bouns_person(self):
+    from users.models import CustomUser # Import here to avoid circular dependency
+    print(f"DEBUG: Bouns bounsPerson: {self.bounsPerson}")
+    try:
+      user = CustomUser.objects.get(username=self.bounsPerson)
+      print(f"DEBUG: Found CustomUser: {user.username}")
+      if hasattr(user, 'profile') and user.profile.nickname:
+        print(f"DEBUG: Found nickname: {user.profile.nickname}")
+        return user.profile.nickname
+      else:
+        print(f"DEBUG: No profile or nickname found for user: {user.username}")
+        return self.bounsPerson
+    except CustomUser.DoesNotExist:
+      print(f"DEBUG: CustomUser with username {self.bounsPerson} does not exist.")
+      return self.bounsPerson
+
   def save(self, *args, **kwargs):
     super().save(*args, **kwargs) # Call the original save method
     self.objectbuild.save() # Trigger recalculation on related ObjectBuild

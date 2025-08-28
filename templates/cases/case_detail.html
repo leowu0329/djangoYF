@@ -409,7 +409,7 @@
                 <thead class="table-light">
                   <tr>
                     <th>參考物件訊息</th>
-                    <th>加成</th>
+                    <th colspan="1">加成</th>
                     <th>計算</th>
                     <th class="text-end">操作</th>
                   </tr>
@@ -422,7 +422,7 @@
                         地址: {{ ob.address }}<br>
                         附件: {% if ob.url %}<a href="{{ ob.url }}" target="_blank">連結</a>{% else %}<span class="text-muted">—</span>{% endif %}<br>
                         屋齡(年): {{ ob.houseAge }}<br>
-                        成交日期: {{ ob.transactionDate }}<br>
+                        成交日期: {{ ob.transactionDate|date:"Y-m-d"|default:"—" }}<br>
                         樓高: {{ ob.floorHeight }}<br>
                         總價: {{ ob.totalPrice }}<br>
                         建坪(坪): {{ ob.buildArea }}<br>
@@ -430,19 +430,31 @@
                         單價: {{ ob.unitPrice }}
                       </td>
                       <td>
-                        {% if ob.bounses.all %}
-                          {% for bouns in ob.bounses.all %}
-                            <div>
-                              勘查員: {{ bouns.bounsPerson }}<br>
-                              加成: {{ bouns.bounsRate }}<br>
-                              加成原因: {{ bouns.bounsReason }}
-                              <a href="{% url 'bouns_update' bouns.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
-                              <a href="{% url 'bouns_delete' bouns.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
-                            </div>
-                          {% endfor %}
-                        {% else %}
-                          <span class="text-muted">—</span>
-                        {% endif %}
+                        <table class="table table-sm table-borderless mb-0">
+                          <thead>
+                            <tr>
+                              <th>勘查員</th>
+                              <th>加成</th>
+                              <th>加成原因</th>
+                              <th>操作</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for bouns in ob.bounses.all %}
+                                <tr>
+                                  <td>{{ bouns.display_bouns_person }}</td>
+                                  <td>{{ bouns.bounsRate }}</td>
+                                  <td>{{ bouns.bounsReason }}</td>
+                                  <td>
+                                    <a href="{% url 'bouns_update' bouns.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                                    <a href="{% url 'bouns_delete' bouns.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                                  </td>
+                                </tr>
+                              {% empty %}
+                                <tr><td colspan="4" class="text-muted">無加成記錄。</td></tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
                         <a href="{% url 'bouns_create' objectbuild_pk=ob.id %}" class="btn btn-sm btn-success mt-2">
                           <i class="bi bi-plus-circle"></i> 新增加成
                         </a>
