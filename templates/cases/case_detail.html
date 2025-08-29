@@ -593,3 +593,28 @@
   </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const hash = window.location.hash;
+    console.log('Current URL hash:', hash);
+    if (hash) {
+      const triggerEl = document.querySelector(`button[data-bs-target="${hash}"]`);
+      console.log('Trigger element found:', triggerEl);
+      if (triggerEl) {
+        // Ensure Bootstrap's Tab is available
+        if (window.bootstrap && window.bootstrap.Tab) {
+          const tab = new window.bootstrap.Tab(triggerEl);
+          tab.show();
+          console.log('Tab activated:', hash);
+        } else {
+          console.error('Bootstrap Tab JavaScript not loaded or initialized.');
+        }
+      } else {
+        console.warn('No tab button found for hash:', hash);
+      }
+    }
+  });
+</script>
+{% endblock %}

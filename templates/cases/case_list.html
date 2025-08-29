@@ -65,6 +65,7 @@
               <th>執行結果</th>
               <th>優購結果</th>
               <th>標的編號</th>
+              <th>公文</th>
               <th class="text-end">操作</th>
             </tr>
           </thead>
@@ -85,6 +86,15 @@
                   {% endif %}
                 </td>
                 <td>{{ case.results.last.objectNumber|default:"—" }}</td>
+                <td>
+                  {% if case.officialdocuments.exists %}
+                    <a href="{% url 'case_detail' case.id %}#officialdocuments" class="btn btn-sm btn-outline-info">
+                      <i class="bi bi-file-text"></i> 查看公文
+                    </a>
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
                 <td class="text-end">
                   
                   <a href="{% url 'case_delete' case.id %}" class="btn btn-sm btn-outline-danger">

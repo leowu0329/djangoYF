@@ -61,7 +61,8 @@ class CaseListView(LoginRequiredMixin, ListView):
                 Q(results__stopBuyDate__icontains=search_query) | # Assuming date can be searched as string
                 Q(finaldecisions__finalDecision__icontains=search_query) |
                 Q(results__actionResult__icontains=search_query) |
-                Q(results__objectNumber__icontains=search_query)
+                Q(results__objectNumber__icontains=search_query) |
+                Q(officialdocuments__docNumber__icontains=search_query)
             ).distinct()
 
         # Sorting
