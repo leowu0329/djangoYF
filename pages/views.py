@@ -266,13 +266,17 @@ class BuildDeleteView(LoginRequiredMixin, DeleteView):
     model = Build
     template_name = 'builds/build_confirm_delete.html'
 
-    def delete(self, request, *args, **kwargs):
+    def dispatch(self, request, *args, **kwargs):
         self.object = self.get_object()
-        case_id = self.object.cases_id
+        self.case_pk = self.object.cases.pk
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return reverse('case_detail', args=[self.case_pk])
+
+    def delete(self, request, *args, **kwargs):
         messages.success(self.request, "建物資料已刪除！")
-        response = super().delete(request, *args, **kwargs)
-        self.success_url = reverse_lazy('case_detail', args=[case_id])
-        return response
+        return super().delete(request, *args, **kwargs)
 
 # Person CRUD
 class PersonCreateView(LoginRequiredMixin, CreateView):
@@ -361,13 +365,17 @@ class SurveyDeleteView(LoginRequiredMixin, DeleteView):
     model = Survey
     template_name = 'surveys/survey_confirm_delete.html'
 
-    def delete(self, request, *args, **kwargs):
+    def dispatch(self, request, *args, **kwargs):
         self.object = self.get_object()
-        case_id = self.object.cases_id
+        self.case_pk = self.object.cases.pk
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return reverse('case_detail', args=[self.case_pk])
+
+    def delete(self, request, *args, **kwargs):
         messages.success(self.request, "勘查資料已刪除！")
-        response = super().delete(request, *args, **kwargs)
-        self.success_url = reverse_lazy('case_detail', args=[case_id])
-        return response
+        return super().delete(request, *args, **kwargs)
 
 # FinalDecision CRUD
 class FinalDecisionCreateView(LoginRequiredMixin, CreateView):
@@ -408,13 +416,17 @@ class FinalDecisionDeleteView(LoginRequiredMixin, DeleteView):
     model = FinalDecision
     template_name = 'finaldecisions/finaldecision_confirm_delete.html'
 
-    def delete(self, request, *args, **kwargs):
+    def dispatch(self, request, *args, **kwargs):
         self.object = self.get_object()
-        case_id = self.object.cases_id
+        self.case_pk = self.object.cases.pk
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return reverse('case_detail', args=[self.case_pk])
+
+    def delete(self, request, *args, **kwargs):
         messages.success(self.request, "最終判定已刪除！")
-        response = super().delete(request, *args, **kwargs)
-        self.success_url = reverse_lazy('case_detail', args=[case_id])
-        return response
+        return super().delete(request, *args, **kwargs)
 
 # Result CRUD
 class ResultCreateView(LoginRequiredMixin, CreateView):
@@ -455,13 +467,17 @@ class ResultDeleteView(LoginRequiredMixin, DeleteView):
     model = Result
     template_name = 'results/result_confirm_delete.html'
 
-    def delete(self, request, *args, **kwargs):
+    def dispatch(self, request, *args, **kwargs):
         self.object = self.get_object()
-        case_id = self.object.cases_id
+        self.case_pk = self.object.cases.pk
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return reverse('case_detail', args=[self.case_pk])
+
+    def delete(self, request, *args, **kwargs):
         messages.success(self.request, "結果資料已刪除！")
-        response = super().delete(request, *args, **kwargs)
-        self.success_url = reverse_lazy('case_detail', args=[case_id])
-        return response
+        return super().delete(request, *args, **kwargs)
 
 # ObjectBuild CRUD
 class ObjectBuildCreateView(LoginRequiredMixin, CreateView):
@@ -531,13 +547,17 @@ class ObjectBuildDeleteView(LoginRequiredMixin, DeleteView):
     model = ObjectBuild
     template_name = 'objectbuilds/objectbuild_confirm_delete.html'
 
-    def delete(self, request, *args, **kwargs):
+    def dispatch(self, request, *args, **kwargs):
         self.object = self.get_object()
-        case_id = self.object.cases_id
+        self.case_pk = self.object.cases.pk
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return reverse('case_detail', args=[self.case_pk])
+
+    def delete(self, request, *args, **kwargs):
         messages.success(self.request, "比價建物已刪除！")
-        response = super().delete(request, *args, **kwargs)
-        self.success_url = reverse_lazy('case_detail', args=[case_id])
-        return response
+        return super().delete(request, *args, **kwargs)
 
 # Bouns CRUD
 class BounsCreateView(LoginRequiredMixin, CreateView):
@@ -649,13 +669,17 @@ class AuctionDeleteView(LoginRequiredMixin, DeleteView):
     model = Auction
     template_name = 'auctions/auction_confirm_delete.html'
 
-    def delete(self, request, *args, **kwargs):
+    def dispatch(self, request, *args, **kwargs):
         self.object = self.get_object()
-        case_id = self.object.cases_id
+        self.case_pk = self.object.cases.pk
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return reverse('case_detail', args=[self.case_pk])
+
+    def delete(self, request, *args, **kwargs):
         messages.success(self.request, "拍賣資料已刪除！")
-        response = super().delete(request, *args, **kwargs)
-        self.success_url = reverse_lazy('case_detail', args=[case_id])
-        return response
+        return super().delete(request, *args, **kwargs)
 
 # OfficialDocument CRUD
 class OfficialDocumentCreateView(LoginRequiredMixin, CreateView):

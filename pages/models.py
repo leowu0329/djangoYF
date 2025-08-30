@@ -31,6 +31,27 @@ class Cases(models.Model):
   def get_absolute_url(self):
     return reverse('case_detail', args=[str(self.id)])
 
+  @property
+  def survey_links_count_display(self):
+    total_links_count = 0
+    for survey in self.surveys.all():
+        link_fields = [
+            survey.foreclosureAnnouncementLink,
+            survey.house988Link,
+            survey.objectPhotoLink,
+            survey.netMarketPriceLink,
+            survey.foreclosureRecordLink,
+            survey.objectViewLink,
+            survey.pagesViewLink,
+            survey.moneytViewLink,
+        ]
+        # Count non-empty links for the current survey
+        total_links_count += sum(1 for field in link_fields if field)
+
+    if total_links_count > 0:
+        return f"(連結：{total_links_count})"
+    return "(0)"
+
   def save(self, *args, **kwargs):
     # 處理 bigSection
     if self.bigSection:
@@ -99,17 +120,17 @@ class Cases(models.Model):
   def total_calculated_land_area_display(self):
     from django.db.models import Sum # Import Sum here
     total_calculated_area = self.lands.aggregate(Sum('calculatedArea'))['calculatedArea__sum']
-    if total_calculated_area is None:
-      total_calculated_area = Decimal('0')
-    return f"合計：{total_calculated_area.quantize(Decimal('0.01'))} 坪"
+    if total_calculated_area is None or total_calculated_area == Decimal('0'):
+      return "無記錄"
+    return f"{total_calculated_area.quantize(Decimal('0.01'))} 坪"
 
   @property
   def total_calculated_build_area_display(self):
     from django.db.models import Sum # Import Sum here
     total_calculated_area = self.builds.aggregate(Sum('calculatedArea'))['calculatedArea__sum']
-    if total_calculated_area is None:
-      total_calculated_area = Decimal('0')
-    return f"合計：{total_calculated_area.quantize(Decimal('0.01'))} 坪"
+    if total_calculated_area is None or total_calculated_area == Decimal('0'):
+      return "無記錄"
+    return f"{total_calculated_area.quantize(Decimal('0.01'))} 坪"
 
   @property
   def people_summary_display(self):
@@ -117,6 +138,27 @@ class Cases(models.Model):
     debtors_count = self.people.filter(type='債務人').count()
     creditors_count = self.people.filter(type='債權人').count()
     return f"債務人({debtors_count})/債權人({creditors_count})"
+
+  @property
+  def avg_objectbuild_calculate_display(self):
+    from django.db.models import Avg
+    avg_value = self.objectbuilds.aggregate(Avg('calculate'))['calculate__avg']
+    if avg_value is not None:
+      return f"時價：{int(avg_value)}元"
+    return "無記錄"
+
+  @property
+  def result_action_result_display(self):
+    latest_result = self.results.order_by('-created').first()
+    if latest_result and latest_result.actionResult:
+      return f"{latest_result.actionResult}"
+    return "無記錄"
+
+  def __str__(self):
+    return self.caseNumber
+
+  def get_absolute_url(self):
+    return reverse('case_detail', args=[str(self.id)])
 
 class City(models.Model):
   name = models.CharField(u'城市',max_length=30)
