@@ -62,11 +62,15 @@
           <button class="nav-link" id="auctions-tab" data-bs-toggle="tab" data-bs-target="#auctions" type="button" role="tab" aria-controls="auctions" aria-selected="false">
             <i class="bi bi-gavel"></i> 拍賣({% with latest_auction=case.auctions.last %}
               {% if latest_auction %}
-                CP: {{ latest_auction.calculated_cp_value }}
-                {% if latest_auction.type == '1拍' and latest_auction.calculated_cp_value > 0.92 or latest_auction.type == '2拍' and latest_auction.calculated_cp_value > 1.15 or latest_auction.type == '3拍' and latest_auction.calculated_cp_value > 1.44 or latest_auction.type == '4拍' and latest_auction.calculated_cp_value > 1.80 %}
-                  [建議進場]
+                {% if case.objectbuilds.exists %}
+                  CP: {{ latest_auction.calculated_cp_value }}
+                  {% if latest_auction.type == '1拍' and latest_auction.calculated_cp_value > 0.92 or latest_auction.type == '2拍' and latest_auction.calculated_cp_value > 1.15 or latest_auction.type == '3拍' and latest_auction.calculated_cp_value > 1.44 or latest_auction.type == '4拍' and latest_auction.calculated_cp_value > 1.80 %}
+                    [建議進場]
+                  {% else %}
+                    [不可進場]
+                  {% endif %}
                 {% else %}
-                  [不可進場]
+                  無時價記錄
                 {% endif %}
               {% else %}
                 無記錄
@@ -84,30 +88,44 @@
       <div class="tab-content pt-3" id="caseTabContent">
         <!-- Details Tab -->
         <div class="tab-pane fade show active" id="details" role="tabpanel" aria-labelledby="details-tab">
-          <ul class="list-group list-group-flush">
-            <li class="list-group-item"><strong>公司:</strong> {{ case.company }}</li>
-            <li class="list-group-item"><strong>地址:</strong> {{ case.fullAddress }}</li>
-            <li class="list-group-item">
-              <strong>狀態:</strong> 
-              {% if case.status == "在途" %}
-                <span class="badge rounded-pill bg-warning text-dark fs-5">{{ case.status }}</span>
-              {% elif case.status == "結案" %}
-                <span class="badge rounded-pill bg-success fs-5">{{ case.status }}</span>
-              {% else %}
-                <span class="badge rounded-pill bg-secondary fs-5">{{ case.status }}</span>
-              {% endif %}
-            </li>
-            <li class="list-group-item"><strong>負責人:</strong> {{ case.user.profile.nickname|default:case.user.username }}</li>
-          </ul>
-
-          <!-- Actions -->
-          <div class="mt-4 d-flex gap-2">
-            <a href="{% url 'case_update' case.id %}" class="btn btn-primary">
-              <i class="bi bi-pencil"></i> 編輯
-            </a>
-            <a href="{% url 'case_delete' case.id %}" class="btn btn-danger">
-              <i class="bi bi-trash"></i> 刪除
-            </a>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>狀態</th>
+                  <th>案號</th>
+                  <th>地址</th>
+                  <th>公司</th>
+                  <th>負責人</th>
+                  <th class="text-end">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    {% if case.status == "在途" %}
+                      <span class="badge rounded-pill bg-warning text-dark fs-6">{{ case.status }}</span>
+                    {% elif case.status == "結案" %}
+                      <span class="badge rounded-pill bg-success fs-6">{{ case.status }}</span>
+                    {% else %}
+                      <span class="badge rounded-pill bg-secondary fs-6">{{ case.status }}</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ case.caseNumber }}</td>
+                  <td>{{ case.fullAddress|default:"—" }}</td>
+                  <td>{{ case.company|default:"—" }}</td>
+                  <td>{{ case.user.profile.nickname|default:case.user.username }}</td>
+                  <td class="text-end">
+                    <a href="{% url 'case_update' case.id %}" class="btn btn-sm btn-outline-primary">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{% url 'case_delete' case.id %}" class="btn btn-sm btn-outline-danger">
+                      <i class="bi bi-trash"></i>
+                    </a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 

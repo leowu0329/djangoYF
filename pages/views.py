@@ -11,10 +11,6 @@ from users.models import CustomUser # Import CustomUser model
 from .forms import CasesForm, LandForm, BuildForm, PersonForm, SurveyForm, FinalDecisionForm, ResultForm, ObjectBuildForm, BounsForm, AuctionForm, OfficialDocumentForm
 from django.http import JsonResponse, HttpResponseRedirect
 
-@login_required  # 這個裝飾器會自動檢查登入狀態
-def home_page(request):
-    return render(request, 'home.html')  # 假設你的首頁模板是 home.html
-
 def load_townships(request):
     city_id = request.GET.get('city_id')
     townships = Township.objects.filter(city_id=city_id).order_by('name')

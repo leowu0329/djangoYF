@@ -10,7 +10,7 @@ from .views import (
 )
 
 urlpatterns = [
-	path('', views.home_page, name='home'),
+    path('', CaseListView.as_view(), name='home'),
     path('ajax/load-townships/', views.load_townships, name='ajax_load_townships'),
     path('cases/', CaseListView.as_view(), name='case_list'),
     path('cases/<int:pk>/', CaseDetailView.as_view(), name='case_detail'),

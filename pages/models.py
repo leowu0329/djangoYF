@@ -154,6 +154,10 @@ class Cases(models.Model):
       return f"{latest_result.actionResult}"
     return "無記錄"
 
+  @property
+  def has_objectbuild_records(self):
+    return self.objectbuilds.exists()
+
   def __str__(self):
     return self.caseNumber
 

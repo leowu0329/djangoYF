@@ -93,7 +93,7 @@
     <!-- 頁面專用CSS -->
     {% block css_style %}{% endblock css_style %}
     
-    <title>{% block title %}新聞報紙系統{% endblock %}</title>
+    <title>{% block title %}揚富管理系統{% endblock %}</title>
 </head>
 
 <body>
@@ -102,7 +102,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark navbar-custom mb-4">
         <div class="container">
             <a class="navbar-brand" href="/">
-                <i class="fas fa-newspaper me-2"></i>新聞報紙系統
+                <i class="fas fa-newspaper me-2"></i>揚富管理系統
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -155,7 +155,7 @@
     {% if user.is_authenticated and not is_modal_form %}
     <footer class="footer">
         <div class="container text-center">
-            <p class="mb-0">&copy; {% now "Y" %} 新聞報紙系統 版權所有</p>
+            <p class="mb-0">&copy; {% now "Y" %} 揚富管理系統 版權所有</p>
             <p class="mb-0"><small>建議使用 Chrome、Edge 或 Firefox 最新版本瀏覽器</small></p>
         </div>
     </footer>
@@ -182,7 +182,7 @@
                 
                 Swal.fire({
                     title: '確定要登出嗎？',
-                    text: '您即將離開新聞報紙系統',
+                    text: '您即將離開揚富管理系統',
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
