@@ -177,6 +177,12 @@ class CaseListView(LoginRequiredMixin, ListView):
         context['selected_city'] = self.request.GET.get('city', '')
         context['selected_user'] = self.request.GET.get('user', '')
         context['page_size'] = self.request.GET.get('page_size', self.paginate_by)
+        
+        # Add all cities for filter dropdown
+        context['cities'] = City.objects.all().order_by('name')
+        
+        # Add all users for filter dropdown
+        context['users'] = CustomUser.objects.all().order_by('username')
 
         for case in context['cases']:
             latest_stop_buy_date = getattr(case, 'latest_stop_buy_date', None)
