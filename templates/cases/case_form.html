@@ -5,7 +5,7 @@
 <div class="container mt-4">
   <div class="card">
     <div class="card-header bg-primary text-white">
-      <h1 class="card-title">{% if form.instance.pk %}Edit Case{% else %}Create New Case{% endif %}</h1>
+      <h1 class="card-title">{% if form.instance.pk %}編輯案件{% else %}建立新案件{% endif %}</h1>
     </div>
     <div class="card-body">
       <form method="post">
@@ -31,13 +31,13 @@
         <div class="row">
           <div class="col-md-6 mb-3">
             <label for="{{ form.city.id_for_label }}" class="form-label">{{ form.city.label }}</label>
-            {{ form.city|add_class:"form-control" }}
+            {{ form.city|add_class:"form-control"|attr:"id:id_city" }}
             {% if form.city.help_text %}<div class="form-text">{{ form.city.help_text }}</div>{% endif %}
             {% for error in form.city.errors %}<div class="alert alert-danger mt-1">{{ error }}</div>{% endfor %}
           </div>
           <div class="col-md-6 mb-3">
             <label for="{{ form.township.id_for_label }}" class="form-label">{{ form.township.label }}</label>
-            {{ form.township|add_class:"form-control" }}
+            {{ form.township|add_class:"form-control"|attr:"id:id_township" }}
             {% if form.township.help_text %}<div class="form-text">{{ form.township.help_text }}</div>{% endif %}
             {% for error in form.township.errors %}<div class="alert alert-danger mt-1">{{ error }}</div>{% endfor %}
           </div>
@@ -110,10 +110,10 @@
 
         <div class="d-flex justify-content-end">
           <button type="submit" class="btn btn-primary me-2">
-            <i class="bi bi-save"></i> Save
+            <i class="bi bi-save"></i> 儲存
           </button>
           <a href="{% if form.instance.pk %}{% url 'case_detail' form.instance.pk %}{% else %}{% url 'case_list' %}{% endif %}" class="btn btn-outline-secondary">
-            <i class="bi bi-x-circle"></i> Cancel
+            <i class="bi bi-x-circle"></i> 取消
           </a>
         </div>
       </form>
@@ -121,3 +121,77 @@
   </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var citySelect = document.getElementById('id_city');
+    var townshipSelect = document.getElementById('id_township');
+    var initialTownshipId = {{ form.instance.township.id|default:"''" }};
+
+    function loadTownships() {
+      var cityId = citySelect.value;
+      if (cityId) {
+        fetch(`/ajax/load-townships/?city_id=${cityId}`)
+          .then(async function(response) {
+            if (!response.ok) {
+              var errorMsg = 'HTTP ' + response.status + ' 錯誤';
+              if (response.status === 404) {
+                errorMsg = '找不到請求的資源（404錯誤），請檢查URL路徑是否正確';
+              } else if (response.status === 400) {
+                errorMsg = '請求參數錯誤（400錯誤）';
+              } else if (response.status === 500) {
+                errorMsg = '伺服器內部錯誤（500錯誤）';
+              }
+              
+              // 嘗試解析JSON錯誤消息
+              try {
+                var errorData = await response.json();
+                if (errorData && errorData.error) {
+                  errorMsg = errorData.error;
+                }
+              } catch (e) {
+                // 如果不是JSON，使用預設錯誤消息
+              }
+              throw new Error(errorMsg);
+            }
+            return response.json();
+          })
+          .then(function(data) {
+            if (data && data.error) {
+              console.error('載入鄉鎮資料失敗:', data.error);
+              townshipSelect.innerHTML = '<option value="">載入失敗</option>';
+              return;
+            }
+            townshipSelect.innerHTML = ''; // Clear existing options
+            if (Array.isArray(data)) {
+              data.forEach(function(township) {
+                var option = new Option(township.name, township.id);
+                townshipSelect.add(option);
+              });
+              // Set initial selected township if exists
+              if (initialTownshipId) {
+                townshipSelect.value = initialTownshipId;
+                initialTownshipId = null; // Clear to prevent re-setting on subsequent loads
+              }
+            }
+          })
+          .catch(function(error) {
+            console.error('載入鄉鎮資料時發生錯誤:', error.message);
+            townshipSelect.innerHTML = '<option value="">載入失敗</option>';
+          });
+      } else {
+        townshipSelect.innerHTML = '<option value="">--------</option>';
+      }
+    }
+
+    // Load townships on city change
+    citySelect.addEventListener('change', loadTownships);
+
+    // Initial load if a city is already selected (e.g., on edit page)
+    if (citySelect.value) {
+      loadTownships();
+    }
+  });
+</script>
+{% endblock extra_js %}

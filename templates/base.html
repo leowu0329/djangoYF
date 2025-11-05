@@ -93,7 +93,7 @@
     <!-- 頁面專用CSS -->
     {% block css_style %}{% endblock css_style %}
     
-    <title>{% block title %}新聞報紙系統{% endblock %}</title>
+    <title>{% block title %}揚富管理系統{% endblock %}</title>
 </head>
 
 <body>
@@ -102,27 +102,18 @@
     <nav class="navbar navbar-expand-lg navbar-dark navbar-custom mb-4">
         <div class="container">
             <a class="navbar-brand" href="/">
-                <i class="fas fa-newspaper me-2"></i>新聞報紙系統
+                <i class="fas fa-newspaper me-2"></i>揚富管理系統
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-home me-1"></i> 首頁</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-newspaper me-1"></i> 新聞文章</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-users me-1"></i> 關於我們</a>
-                    </li>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user-circle me-1"></i> {{ user.username }}
+                            <i class="fas fa-user-circle me-1"></i> {{ user.profile.nickname|default:user.username }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="fas fa-user me-2"></i> 個人資料</a></li>
@@ -146,7 +137,7 @@
     {% endif %}
 
     <!-- 主要內容區 -->
-    <main class="container container-main">
+    <main class="container-fluid container-main">
         {% block content %}
         {% endblock %}
     </main>
@@ -155,7 +146,7 @@
     {% if user.is_authenticated and not is_modal_form %}
     <footer class="footer">
         <div class="container text-center">
-            <p class="mb-0">&copy; {% now "Y" %} 新聞報紙系統 版權所有</p>
+            <p class="mb-0">&copy; {% now "Y" %} 揚富管理系統 版權所有</p>
             <p class="mb-0"><small>建議使用 Chrome、Edge 或 Firefox 最新版本瀏覽器</small></p>
         </div>
     </footer>
@@ -182,7 +173,7 @@
                 
                 Swal.fire({
                     title: '確定要登出嗎？',
-                    text: '您即將離開新聞報紙系統',
+                    text: '您即將離開揚富管理系統',
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
@@ -219,5 +210,50 @@
     });
     </script>
     {% endif %}
+
+    <!-- 放在你的 template 或 static js -->
+    <script>
+    async function loadTownships(cityId) {
+      try {
+        const resp = await fetch(`/ajax/load-townships/?city_id=${encodeURIComponent(cityId)}`, { credentials: 'same-origin' });
+        if (!resp.ok) {
+          var errorMsg = 'HTTP ' + resp.status + ' 錯誤';
+          if (resp.status === 404) {
+            errorMsg = '找不到請求的資源（404錯誤），請檢查URL路徑是否正確';
+          } else if (resp.status === 400) {
+            errorMsg = '請求參數錯誤（400錯誤）';
+          } else if (resp.status === 500) {
+            errorMsg = '伺服器內部錯誤（500錯誤）';
+          }
+          
+          // 嘗試解析JSON錯誤消息
+          try {
+            const errorData = await resp.json();
+            if (errorData && errorData.error) {
+              errorMsg = errorData.error;
+            }
+          } catch (e) {
+            // 如果不是JSON，使用預設錯誤消息
+            const text = await resp.text();
+            console.error('伺服器返回非JSON響應:', resp.status, text.substring(0, 120));
+          }
+          
+          console.error('載入鄉鎮資料失敗:', errorMsg);
+          return null;
+        }
+        
+        const data = await resp.json();
+        // 檢查是否有錯誤消息
+        if (data && data.error) {
+          console.error('伺服器返回錯誤:', data.error);
+          return null;
+        }
+        return data;
+      } catch (err) {
+        console.error('載入鄉鎮資料時發生錯誤:', err.message);
+        return null;
+      }
+    }
+    </script>
 </body>
 </html>

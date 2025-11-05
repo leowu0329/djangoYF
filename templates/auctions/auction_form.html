@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card">
+    <div class="card-header bg-primary text-white">
+      <h1 class="card-title">{% if form.instance.pk %}Edit Auction{% else %}Add Auction{% endif %}</h1>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">拍別</label>
+            {{ form.type|add_class:"form-control" }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">拍賣日</label>
+            {{ form.auctionDate|add_class:"form-control" }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">底價</label>
+            {{ form.floorPrice|add_class:"form-control" }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">坪價</label>
+            {{ form.pingPrice|add_class:"form-control" }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">CP</label>
+            {{ form.CP|add_class:"form-control" }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">點閱</label>
+            {{ form.click|add_class:"form-control" }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">監控</label>
+            {{ form.monitor|add_class:"form-control" }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">成交件數</label>
+            {{ form.caseCount|add_class:"form-control" }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">保証金</label>
+            {{ form.margin|add_class:"form-control" }}
+          </div>
+          {{ form.cases }}
+        </div>
+
+        <div class="d-flex justify-content-end mt-4">
+          <button type="submit" class="btn btn-primary me-2">Save</button>
+          <a href="{% if form.instance.pk %}{% url 'case_detail' form.instance.cases_id %}{% else %}{% url 'case_detail' case.id %}{% endif %}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

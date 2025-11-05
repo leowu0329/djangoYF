@@ -3,11 +3,12 @@ from pathlib import Path
 
 from environ import Env
 env=Env()
-Env.read_env()
-
-ENVIRONMENT = env('ENVIRONMENT',default="production")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+Env.read_env(env_file=BASE_DIR / '.env')
+
+ENVIRONMENT = env('ENVIRONMENT',default="production")
 
 SECRET_KEY = env('SECRET_KEY')
 

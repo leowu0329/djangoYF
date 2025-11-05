@@ -5,11 +5,17 @@ from users import views as user_views
 from django.views.generic.base import TemplateView
 from django.contrib.auth.views import LogoutView
 from users.views import CustomLogoutView
+from django.views.generic.base import RedirectView
+from pages import views as pages_views
 
 urlpatterns = [
-    path('', include('pages.urls')),
+    path('', RedirectView.as_view(url='cases/', permanent=True)), # Redirect root to /cases/
     path('admin/', admin.site.urls),
     path('users/', include('users.urls')),
+    # AJAX endpoints without prefix (for compatibility)
+    path('ajax/load-townships/', pages_views.load_townships, name='ajax_load_townships_root'),
+    path('ajax/get-city-for-township/', pages_views.get_city_for_township, name='ajax_get_city_for_township_root'),
+    path('cases/', include('pages.urls')), # Include pages.urls under /cases/
     
     # 認證URLs（包括內置的登入/登出）
     path('users/', include('django.contrib.auth.urls')),

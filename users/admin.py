@@ -1,19 +1,38 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from import_export import resources, fields
-from import_export.widgets import ForeignKeyWidget
+from import_export.widgets import ForeignKeyWidget, DateTimeWidget
 from import_export.admin import ImportExportModelAdmin
-from import_export.formats.base_formats import XLSX
+from import_export.formats import base_formats
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 from .models import CustomUser, Profile
 
 # 自訂 Mixin 強制使用 XLSX 格式
 class XLSXExportMixin:
+    def get_import_formats(self):
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+    
     def get_export_formats(self):
-        return [XLSX]  # 只返回 XLSX 格式
+        return [base_formats.XLSX, base_formats.CSV, base_formats.JSON]
+
+"""
+移除對舊版 tablib 直接格式類的相依。XLSX 支援交由
+import_export.formats.base_formats.XLSX 以及 openpyxl/tablib[xlsx] 提供。
+"""
 
 # CustomUser 資源類別
 class CustomUserResource(resources.ModelResource):
+    date_joined = fields.Field(
+        attribute='date_joined',
+        column_name='date_joined',
+        widget=DateTimeWidget(format='%Y-%m-%d %H:%M:%S')
+    )
+    last_login = fields.Field(
+        attribute='last_login',
+        column_name='last_login',
+        widget=DateTimeWidget(format='%Y-%m-%d %H:%M:%S')
+    )
+    
     class Meta:
         model = CustomUser
         skip_unchanged = True
@@ -36,7 +55,7 @@ class ProfileResource(resources.ModelResource):
         skip_unchanged = True
         report_skipped = True
         import_id_fields = ['user']
-        export_order = ('id', 'user', 'role', 'work_area', 'created_at', 'updated_at')
+        export_order = "__all__"
 
 # Profile 內聯管理
 class ProfileInline(admin.StackedInline):

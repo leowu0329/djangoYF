@@ -34,11 +34,13 @@
             </button>
         </form>
         
+        {% if user.profile.role == 'admin' %}
         <div class="d-grid gap-2">
             <a href="#" class="btn btn-outline-primary">
                 <i class="fas fa-newspaper"></i> View Articles
             </a>
         </div>
+        {% endif %}
     {% else %}
         <h2 class="mb-4">Welcome to Newspaper App</h2>
         <i class="fas fa-newspaper fa-5x mb-4 text-primary"></i>

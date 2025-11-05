@@ -1,20 +1,18 @@
 from django.urls import path
 from . import views
-from .views import (
-    CaseListView,
-    CaseDetailView,
-    CaseCreateView,
-    CaseUpdateView,
-    CaseDeleteView
-)
+from .views import CaseListView
 
 urlpatterns = [
-	path('', views.home_page, name='home'),
+    # AJAX endpoints (用於互動式聯集下拉選單)
+    path('ajax/load-townships/', views.load_townships, name='ajax_load_townships'),
+    path('ajax/get-city-for-township/', views.get_city_for_township, name='ajax_get_city_for_township'),
+
+    path('', CaseListView.as_view(), name='home'),
     path('cases/', CaseListView.as_view(), name='case_list'),
-    path('cases/<int:pk>/', CaseDetailView.as_view(), name='case_detail'),
-    path('cases/new/', CaseCreateView.as_view(), name='case_create'),
-    path('cases/<int:pk>/update/', CaseUpdateView.as_view(), name='case_update'),
-    path('cases/<int:pk>/delete/', CaseDeleteView.as_view(), name='case_delete'),
+    path('cases/<int:pk>/', views.CaseDetailView.as_view(), name='case_detail'),
+    path('cases/new/', views.CaseCreateView.as_view(), name='case_create'),
+    path('cases/<int:pk>/update/', views.CaseUpdateView.as_view(), name='case_update'),
+    path('cases/<int:pk>/delete/', views.CaseDeleteView.as_view(), name='case_delete'),
 
     # Land
     path('cases/<int:case_pk>/lands/new/', views.LandCreateView.as_view(), name='land_create'),
@@ -50,4 +48,21 @@ urlpatterns = [
     path('cases/<int:case_pk>/objectbuilds/new/', views.ObjectBuildCreateView.as_view(), name='objectbuild_create'),
     path('objectbuilds/<int:pk>/update/', views.ObjectBuildUpdateView.as_view(), name='objectbuild_update'),
     path('objectbuilds/<int:pk>/delete/', views.ObjectBuildDeleteView.as_view(), name='objectbuild_delete'),
+    # Bouns
+    path('objectbuilds/<int:objectbuild_pk>/bouns/new/', views.BounsCreateView.as_view(), name='bouns_create'),
+    path('bouns/<int:pk>/update/', views.BounsUpdateView.as_view(), name='bouns_update'),
+    path('bouns/<int:pk>/delete/', views.BounsDeleteView.as_view(), name='bouns_delete'),
+    # Auction
+    path('cases/<int:case_pk>/auctions/new/', views.AuctionCreateView.as_view(), name='auction_create'),
+    path('auctions/<int:pk>/update/', views.AuctionUpdateView.as_view(), name='auction_update'),
+    path('auctions/<int:pk>/delete/', views.AuctionDeleteView.as_view(), name='auction_delete'),
+
+    # OfficialDocument
+    path('cases/<int:case_pk>/officialdocuments/new/', views.OfficialDocumentCreateView.as_view(), name='officialdocument_create'),
+    path('officialdocuments/<int:pk>/detail/', views.OfficialDocumentDetailView.as_view(), name='officialdocument_detail'),
+    path('officialdocuments/<int:pk>/update/', views.OfficialDocumentUpdateView.as_view(), name='officialdocument_update'),
+    path('officialdocuments/<int:pk>/delete/', views.OfficialDocumentDeleteView.as_view(), name='officialdocument_delete'),
+
+    # Word Export
+    path('cases/<int:pk>/export/word/', views.case_export_word, name='case_export_word'),
 ]

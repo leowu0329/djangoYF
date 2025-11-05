@@ -1,9 +1,10 @@
 from django import forms
-from .models import Cases, Land, Build, Person, Survey, FinalDecision, Result, ObjectBuild
+from .models import Cases, Land, Build, Person, Survey, FinalDecision, Result, ObjectBuild, Bouns, Auction, City, Township, OfficialDocuments
+from users.models import CustomUser
 
 COMPANY_CHOICES = [
-	("揚富開發", "揚富開發"),
-	("鉅汱開發", "鉅汱開發"),
+	("揚富開發有限公司", "揚富開發有限公司"),
+	("鉅鈦開發有限公司", "鉅鈦開發有限公司"),
 ]
 
 STATUS_CHOICES = [
@@ -67,6 +68,7 @@ WORK_AREA_CHOICES = [
 ]
 
 FINAL_DECISION_CHOICES = [
+	("未判定", "未判定"),
 	("1拍", "1拍"),
 	("2拍", "2拍"),
 	("3拍", "3拍"),
@@ -88,6 +90,35 @@ class CasesForm(forms.ModelForm):
 		widget=forms.Select(attrs={"class": "form-select"}),
 		label='案件狀態',
 	)
+
+	city = forms.ModelChoiceField(
+		queryset=City.objects.all(),
+		required=False,
+		widget=forms.Select(attrs={"class": "form-select"}),
+		label='縣市',
+	)
+
+	township = forms.ModelChoiceField(
+		queryset=Township.objects.all(), # Initial queryset, will be filtered by JS
+		required=False,
+		widget=forms.Select(attrs={"class": "form-select"}),
+		label='鄉鎮區里',
+	)
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+		city_id = None
+		if self.instance and self.instance.city: # For existing instances, get initial city from instance
+			city_id = self.instance.city.id
+
+		if self.is_bound: # If form is submitted, use data from POST
+			city_id = self.data.get('city')
+
+		if city_id:
+			self.fields['township'].queryset = Township.objects.filter(city_id=city_id)
+		else:
+			self.fields['township'].queryset = Township.objects.all() # Or Township.objects.none() if no city is selected initially
 
 	class Meta:
 		model = Cases
@@ -221,29 +252,36 @@ class FinalDecisionForm(forms.ModelForm):
 
 
 class ResultForm(forms.ModelForm):
-	actionResult = forms.ChoiceField(
-		choices=[
-			("", ""),
-			("撤回", "撤回"),
-			("第三人搶標", "第三人搶標"),
-			("等待優購", "等待優購"),
-			("遭優購", "遭優購"),
-			("無人優購", "無人優購")
-		],
-		required=False,
-		widget=forms.Select(attrs={"class": "form-select"}),
-		label='執行結果',
-	)
+    actionResult = forms.ChoiceField(
+        choices=[
+            ("", ""),
+            ("撤回", "撤回"),
+            ("第三人搶標", "第三人搶標"),
+            ("等待優購", "等待優購"),
+            ("遭優購", "遭優購"),
+            ("無人優購", "無人優購")
+        ],
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select"}),
+        label='執行結果',
+    )
 
-	class Meta:
-		model = Result
-		fields = ["stopBuyDate", "actionResult", "bidAuctionTime", "bidMoney", "objectNumber"]
-		widgets = {
-			"stopBuyDate": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
-			"bidAuctionTime": forms.TextInput(attrs={"class": "form-control"}),
-			"bidMoney": forms.NumberInput(attrs={"class": "form-control"}),
-			"objectNumber": forms.TextInput(attrs={"class": "form-control"}),
-		}
+    # Add a ChoiceField for bidAuctionTime
+    bidAuctionTime = forms.ChoiceField(
+        choices=[("", ""), ("1拍", "1拍"), ("2拍", "2拍"), ("3拍", "3拍"), ("4拍", "4拍")],
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select"}),
+        label='搶標拍別',
+    )
+
+    class Meta:
+        model = Result
+        fields = ["stopBuyDate", "actionResult", "bidAuctionTime", "bidMoney", "objectNumber"]
+        widgets = {
+            "stopBuyDate": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "bidMoney": forms.NumberInput(attrs={"class": "form-control"}),
+            "objectNumber": forms.TextInput(attrs={"class": "form-control"}),
+        }
 
 
 class ObjectBuildForm(forms.ModelForm):
@@ -254,17 +292,84 @@ class ObjectBuildForm(forms.ModelForm):
 		required=False,
 		initial='自訂',
 	)
+	transactionDate = forms.DateField(widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}), label='成交日期', required=False)
+
 	class Meta:
 		model = ObjectBuild
-		fields = ["type", "address", "url", "houseAge", "transactionDate", "floorHeight", "totalPrice", "buildArea", "subBuildArea", "calculate"]
+		fields = ["type", "address", "url", "houseAge", "transactionDate", "floorHeight", "totalPrice", "buildArea", "subBuildArea", "calculate", "cases"]
 		widgets = {
-			"address": forms.TextInput(attrs={"class": "form-control"}),
-			"url": forms.URLInput(attrs={"class": "form-control"}),
-			"houseAge": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
-			"transactionDate": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
-			"floorHeight": forms.TextInput(attrs={"class": "form-control"}),
-			"totalPrice": forms. NumberInput(attrs={"class": "form-control"}),
-			"buildArea": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
-			"subBuildArea": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
-			"calculate": forms.NumberInput(attrs={"class": "form-control"}),
+			"cases": forms.HiddenInput(),
+			"type": forms.Select(attrs={"class": "form-control"}),
 		}
+
+class BounsForm(forms.ModelForm):
+    bounsPerson = forms.ModelChoiceField(
+        queryset=CustomUser.objects.all(),
+        label='勘查員',
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select', 'disabled': True}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['bounsPerson'].label_from_instance = lambda obj: obj.profile.nickname if hasattr(obj, 'profile') and obj.profile.nickname else obj.username
+        
+        # Set initial value for bounsPerson in the form
+        if 'initial' in kwargs and 'bounsPerson' in kwargs['initial']:
+            self.fields['bounsPerson'].initial = kwargs['initial']['bounsPerson']
+        elif self.instance and self.instance.bounsPerson:
+            self.fields['bounsPerson'].initial = self.instance.bounsPerson
+
+
+    class Meta:
+        model = Bouns
+        fields = ('objectbuild', 'bounsPerson', 'bounsRate', 'bounsReason')
+        widgets = {
+            'objectbuild': forms.HiddenInput(),
+        }
+
+class AuctionForm(forms.ModelForm):
+	type = forms.ChoiceField(
+		choices=[("1拍", "1拍"), ("2拍", "2拍"), ("3拍", "3拍"), ("4拍", "4拍")],
+		widget=forms.Select(attrs={"class": "form-select"}),
+		label='拍別',
+		required=False,
+	)
+	class Meta:
+		model = Auction
+		fields = ('cases', 'type', 'auctionDate', 'floorPrice', 'pingPrice', 'CP', 'click', 'monitor', 'caseCount', 'margin')
+		widgets = {
+			'cases': forms.HiddenInput(),
+			'auctionDate': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+			'floorPrice': forms.NumberInput(attrs={'class': 'form-control'}),
+			'pingPrice': forms.NumberInput(attrs={'class': 'form-control', 'disabled': True}),
+			'CP': forms.NumberInput(attrs={'class': 'form-control', 'disabled': True}),
+			'click': forms.NumberInput(attrs={'class': 'form-control'}),
+			'monitor': forms.NumberInput(attrs={'class': 'form-control'}),
+			'caseCount': forms.NumberInput(attrs={'class': 'form-control'}),
+			'margin': forms.NumberInput(attrs={'class': 'form-control'}),
+		}
+
+
+class OfficialDocumentForm(forms.ModelForm):
+    type = forms.ChoiceField(
+        choices=OfficialDocuments.TYPE_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select"}),
+        label='案別',
+    )
+    stock = forms.ChoiceField(
+        choices=OfficialDocuments.STOCK_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select"}),
+        label='股別',
+    )
+    class Meta:
+        model = OfficialDocuments
+        fields = ['cases', 'type', 'stock', 'docNumber', 'tel', 'ext']
+        widgets = {
+            'cases': forms.HiddenInput(),
+            'tel': forms.TextInput(attrs={'class': 'form-control'}),
+            'ext': forms.TextInput(attrs={'class': 'form-control'}),
+            'docNumber': forms.TextInput(attrs={'class': 'form-control'}),
+        }

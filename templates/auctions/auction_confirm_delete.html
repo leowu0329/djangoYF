@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card">
+    <div class="card-header bg-danger text-white">
+      <h1 class="card-title">Delete Auction</h1>
+    </div>
+    <div class="card-body">
+      <p>Are you sure you want to delete the auction record for <strong>"{{ auction.type }}"</strong> on <strong>{{ auction.auctionDate|date:"Y-m-d" }}</strong>?</p>
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger me-2">Delete</button>
+        <a href="{% url 'case_detail' auction.cases_id %}" class="btn btn-outline-secondary">Cancel</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

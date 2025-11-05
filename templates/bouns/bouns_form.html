@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card">
+    <div class="card-header bg-primary text-white">
+      <h1 class="card-title">{% if form.instance.pk %}Edit Bouns{% else %}Add Bouns{% endif %}</h1>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">勘查員</label>
+            {{ form.bounsPerson|add_class:"form-control" }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">加成</label>
+            {{ form.bounsRate|add_class:"form-control" }}
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">加成原因</label>
+            {{ form.bounsReason|add_class:"form-control" }}
+          </div>
+          {{ form.objectbuild }}
+        </div>
+
+        <div class="d-flex justify-content-end mt-4">
+          <button type="submit" class="btn btn-primary me-2">Save</button>
+          <a href="{% if form.instance.pk %}{% url 'case_detail' form.instance.objectbuild.cases_id %}{% else %}{% url 'case_detail' objectbuild.cases_id %}{% endif %}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

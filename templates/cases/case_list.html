@@ -3,43 +3,120 @@
 
 {% block content %}
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="mb-0">Cases</h1>
+    <h1 class="mb-0">案件列表</h1>
+    {% if user.profile.role == 'admin' or user.profile.role == 'user' %}
     <a href="{% url 'case_create' %}" class="btn btn-primary">
-      <i class="bi bi-plus-circle"></i> Create New Case
+      <i class="bi bi-plus-circle"></i> 建立新案件
     </a>
+    {% endif %}
   </div>
+
+  <!-- Filter and Search Form -->
+  <form method="get" class="mb-3">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label for="city-select" class="form-label">縣市</label>
+        <select class="form-select" id="city-select" name="city">
+          <option value="">所有縣市</option>
+          {% for city in cities %}
+            <option value="{{ city.id }}" {% if city.id|stringformat:"s" == selected_city %}selected{% endif %}>{{ city.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label for="user-select" class="form-label">負責人</label>
+        <select class="form-select" id="user-select" name="user">
+          <option value="">所有負責人</option>
+          {% for user in users %}
+            <option value="{{ user.id }}" {% if user.id|stringformat:"s" == selected_user %}selected{% endif %}>{{ user.profile.nickname|default:user.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label for="search-input" class="form-label">關鍵字查詢</label>
+        <input type="text" class="form-control" id="search-input" name="q" value="{{ search_query }}" placeholder="案號、地址、負責人等">
+      </div>
+      <div class="col-md-2 d-grid">
+        <button type="submit" class="btn btn-primary mb-2"> <i class="bi bi-search"></i> 搜尋 </button>
+        <a href="{% url 'case_list' %}" class="btn btn-outline-secondary"> <i class="bi bi-arrow-clockwise"></i> 重置 </a>
+    </div>
+    </div>
+  </form>
 
   {% if cases %}
     <div class="card">
       <div class="card-body p-0">
-        <table class="table table-hover mb-0 align-middle">
+        <table class="table table-hover mb-0 align-middle" style="table-layout: fixed;">
           <thead class="table-light">
             <tr>
-              <th>Case Number</th>
-              <th>Status</th>
-              <th>Full Address</th>
-              <th class="text-end">Actions</th>
+              <th class="text-center align-middle" style="width: 4%;">報表</th>
+              <th class="text-center align-middle" style="width: 39%;">
+                <a href="?q={{ search_query }}&city={{ selected_city }}&user={{ selected_user }}&sort_by=caseNumber&order={% if sort_by == 'caseNumber' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-decoration-none text-dark">
+                    案號及完整地址
+                    {% if sort_by == 'caseNumber' %}
+                        {% if order == 'asc' %}<i class="bi bi-arrow-up"></i>{% else %}<i class="bi bi-arrow-down"></i>{% endif %}
+                    {% else %}
+                        {# Default to descending arrow if not sorted by caseNumber #}
+                        <i class="bi bi-arrow-down"></i>
+                    {% endif %}
+                </a>
+              </th>
+              <th class="text-center align-middle" style="width: 8%;">
+                <a href="?q={{ search_query }}&city={{ selected_city }}&user={{ selected_user }}&sort_by=stopBuyDate&order={% if sort_by == 'stopBuyDate' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-decoration-none text-dark">
+                    應買止日
+                    {% if sort_by == 'stopBuyDate' %}
+                        {% if order == 'asc' %}<i class="bi bi-arrow-up"></i>{% else %}<i class="bi bi-arrow-down"></i>{% endif %}
+                    {% else %}
+                        {# Default to descending arrow if not sorted by stopBuyDate #}
+                        <i class="bi bi-arrow-down"></i>
+                    {% endif %}
+                </a>
+              </th>
+              <th class="text-center align-middle" style="width: 7%;">負責人</th>
+              <th class="text-center align-middle" style="width: 7%;">最終判定</th>
+              <th class="text-center align-middle" style="width: 7%;">執行結果</th>
+              <th class="text-center align-middle" style="width: 7%;">優購結果</th>
+              <th class="text-center align-middle" style="width: 7%;">標的編號</th>
+              <th class="text-center align-middle" style="width: 8%;">公文</th>
+              <th class="text-center align-middle" style="width: 6%;">操作</th>
             </tr>
           </thead>
           <tbody>
             {% for case in cases %}
               <tr>
-                <td><a href="{% url 'case_detail' case.id %}" class="text-decoration-none">{{ case.caseNumber }}</a></td>
-                <td>
-                  {% if case.status %}
-                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">{{ case.status }}</span>
+                <td class="text-center align-middle">
+                  <a href="{% url 'case_export_word' case.id %}" class="btn btn-sm btn-outline-info" title="匯出Word報表">
+                    <i class="bi bi-file-earmark-word"></i>
+                  </a>
+                </td>
+                <td style="white-space: pre-line;"><a href="{% url 'case_detail' case.id %}" class="text-decoration-none">{{ case.case_number_and_address }}</a></td>
+                <td class="text-center align-middle {% if case.stop_buy_date_style == 'future-two-weeks' %}text-danger fw-bold{% endif %}">{{ case.display_stop_buy_date }}</td>
+                <td>{{ case.user.profile.nickname|default:case.user.username|default:"—" }}</td>
+                <td>{{ case.finaldecisions.last.finalDecision|default:"—" }}</td>
+                <td class="text-center align-middle">{{ case.results.last.actionResult|default:"—" }}</td>
+                <td class="text-center align-middle">
+                  {% if case.results.last.actionResult == '等待優購' or case.results.last.actionResult == '遭優購' %}
+                    {{ case.results.last.actionResult }}
                   {% else %}
-                    <span class="text-muted">—</span>
+                    —
                   {% endif %}
                 </td>
-                <td class="text-truncate" style="max-width: 420px;">{{ case.fullAddress }}</td>
-                <td class="text-end">
-                  <a href="{% url 'case_update' case.id %}" class="btn btn-sm btn-outline-primary me-1">
-                    <i class="bi bi-pencil"></i> Edit
-                  </a>
+                <td class="text-center align-middle">{{ case.results.last.objectNumber|default:"—" }}</td>
+                <td class="text-center align-middle">
+                  {% if case.officialdocuments.exists %}
+                    <a href="{% url 'case_detail' case.id %}#officialdocuments" class="btn btn-sm btn-outline-info">
+                      <i class="bi bi-file-text"></i> 查看公文
+                    </a>
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td class="text-end align-middle">
+                  {% if user.profile.role == 'admin' %}
                   <a href="{% url 'case_delete' case.id %}" class="btn btn-sm btn-outline-danger">
-                    <i class="bi bi-trash"></i> Delete
+                    <i class="bi bi-trash"></i> 刪除
                   </a>
+                  {% endif %}
                 </td>
               </tr>
             {% endfor %}
@@ -48,6 +125,52 @@
       </div>
     </div>
   {% else %}
-    <div class="alert alert-info">No cases yet.</div>
+    <div class="alert alert-info">尚無案件。</div>
+  {% endif %}
+
+  {% if is_paginated %}
+    <div class="d-flex justify-content-between align-items-center mt-3">
+      <div>
+        顯示 {{ page_obj.start_index }} ~ {{ page_obj.end_index }} 筆 (第 {{ page_obj.number }} 頁，共 {{ page_obj.paginator.num_pages }} 頁)
+      </div>
+      <nav aria-label="案件分頁">
+        <ul class="pagination mb-0">
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page=1&q={{ search_query }}&city={{ selected_city }}&user={{ selected_user }}&sort_by={{ sort_by }}&order={{ order }}&page_size={{ page_size }}">第一頁</a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}&city={{ selected_city }}&user={{ selected_user }}&sort_by={{ sort_by }}&order={{ order }}&page_size={{ page_size }}">上一頁</a>
+            </li>
+          {% endif %}
+
+          {% for i in page_obj.paginator.page_range %}
+            {% if page_obj.number == i %}
+              <li class="page-item active" aria-current="page"><span class="page-link">{{ i }}</span></li>
+            {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+              <li class="page-item"><a class="page-link" href="?page={{ i }}&q={{ search_query }}&city={{ selected_city }}&user={{ selected_user }}&sort_by={{ sort_by }}&order={{ order }}&page_size={{ page_size }}">{{ i }}</a></li>
+            {% endif %}
+          {% endfor %}
+
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query }}&city={{ selected_city }}&user={{ selected_user }}&sort_by={{ sort_by }}&order={{ order }}&page_size={{ page_size }}">下一頁</a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&q={{ search_query }}&city={{ selected_city }}&user={{ selected_user }}&sort_by={{ sort_by }}&order={{ order }}&page_size={{ page_size }}">最後一頁</a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+
+      <div class="d-flex align-items-center">
+        <label for="page-size-select" class="form-label me-2 mb-0">每頁顯示：</label>
+        <select class="form-select form-select-sm w-auto" id="page-size-select" onchange="window.location.href = this.value;">
+          <option value="?q={{ search_query }}&city={{ selected_city }}&user={{ selected_user }}&sort_by={{ sort_by }}&order={{ order }}&page_size=10" {% if page_size == 10 %}selected{% endif %}>10</option>
+          <option value="?q={{ search_query }}&city={{ selected_city }}&user={{ selected_user }}&sort_by={{ sort_by }}&order={{ order }}&page_size=25" {% if page_size == 25 %}selected{% endif %}>25</option>
+          <option value="?q={{ search_query }}&city={{ selected_city }}&user={{ selected_user }}&sort_by={{ sort_by }}&order={{ order }}&page_size=50" {% if page_size == 50 %}selected{% endif %}>50</option>
+        </select>
+      </div>
+    </div>
   {% endif %}
 {% endblock %}

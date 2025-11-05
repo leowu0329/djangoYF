@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h2>Official Documents for Case: {{ case.caseNumber }}</h2>
+  <a href="{% url 'officialdocument_create' case.pk %}">Add New Official Document</a>
+  <ul>
+    {% for doc in officialdocuments %}
+      <li>
+        {{ doc.type }} - {{ doc.stock }} - {{ doc.tel }} - {{ doc.ext }}
+        <a href="{% url 'officialdocument_detail' doc.pk %}">View</a>
+        <a href="{% url 'officialdocument_update' doc.pk %}">Edit</a>
+        <a href="{% url 'officialdocument_delete' doc.pk %}">Delete</a>
+      </li>
+    {% empty %}
+      <li>No official documents found for this case.</li>
+    {% endfor %}
+  </ul>
+{% endblock %}

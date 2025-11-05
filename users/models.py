@@ -18,6 +18,7 @@ class Profile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
     
     # Personal Information
+    nickname = models.CharField(max_length=100, verbose_name='暱稱') # 新增的暱稱欄位
     personal_id = models.CharField(max_length=20, blank=True, null=True)
     birthday = models.DateField(blank=True, null=True)
     
@@ -67,11 +68,11 @@ class Profile(models.Model):
         return f"{self.user.username}'s Profile"
 
 # Signal to create profile when user is created
-@receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(user=instance)
+# @receiver(post_save, sender=User)
+# def create_user_profile(sender, instance, created, **kwargs):
+#     if created:
+#         Profile.objects.create(user=instance)
 
-@receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
-    instance.profile.save()
+# @receiver(post_save, sender=User)
+# def save_user_profile(sender, instance, **kwargs):
+#     instance.profile.save()
