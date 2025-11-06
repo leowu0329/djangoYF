@@ -12,7 +12,7 @@
   </div>
 
   <!-- Filter and Search Form -->
-  <form method="get" class="mb-3">
+  <form method="get" class="mb-3" id="filter-form">
     <div class="row g-3 align-items-end">
       <div class="col-md-3">
         <label for="status-select" class="form-label">狀態</label>
@@ -31,7 +31,7 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-2">
+      <div class="col-md-3">
         <label for="user-select" class="form-label">負責人</label>
         <select class="form-select" id="user-select" name="user">
           <option value="">所有負責人</option>
@@ -44,12 +44,37 @@
         <label for="search-input" class="form-label">關鍵字查詢</label>
         <input type="text" class="form-control" id="search-input" name="q" value="{{ search_query }}" placeholder="案號、地址、負責人等">
       </div>
-      <div class="col-md-1 d-grid">
-        <button type="submit" class="btn btn-primary mb-2"> <i class="bi bi-search"></i> 搜尋 </button>
-        <a href="{% url 'case_list' %}" class="btn btn-outline-secondary"> <i class="bi bi-arrow-clockwise"></i> 重置 </a>
-    </div>
     </div>
   </form>
+
+  <script>
+    (function() {
+      // 獲取表單和所有篩選元素
+      const form = document.getElementById('filter-form');
+      const statusSelect = document.getElementById('status-select');
+      const citySelect = document.getElementById('city-select');
+      const userSelect = document.getElementById('user-select');
+      const searchInput = document.getElementById('search-input');
+      
+      // 提交表單的函數
+      function submitForm() {
+        form.submit();
+      }
+      
+      // 為下拉選單添加change事件（立即更新）
+      statusSelect.addEventListener('change', submitForm);
+      citySelect.addEventListener('change', submitForm);
+      userSelect.addEventListener('change', submitForm);
+      
+      // 為關鍵字輸入框添加keydown事件（按Enter鍵時更新）
+      searchInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+          event.preventDefault(); // 防止表單的默認提交行為
+          submitForm();
+        }
+      });
+    })();
+  </script>
 
   {% if cases %}
     <div class="card">
