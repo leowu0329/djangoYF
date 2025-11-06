@@ -91,13 +91,32 @@ class CaseListView(LoginRequiredMixin, ListView):
         )
 
         # Filtering
+        # Default status filter to '在途' if not specified (first visit)
+        status_filter = self.request.GET.get('status')
+        if status_filter is None:
+            # First visit, default to '在途'
+            status_filter = '在途'
+            queryset = queryset.filter(status=status_filter)
+        elif status_filter:
+            # User selected a specific status
+            queryset = queryset.filter(status=status_filter)
+        # If status_filter is empty string, show all (user selected "全部")
+        
         city_filter = self.request.GET.get('city')
         user_filter = self.request.GET.get('user')
+        
+        # Default user filter to current logged-in user if not specified (first visit)
+        if user_filter is None and self.request.user.is_authenticated:
+            # First visit, default to current logged-in user
+            user_filter = str(self.request.user.id)
+            queryset = queryset.filter(user__id=user_filter)
+        elif user_filter:
+            # User selected a specific user
+            queryset = queryset.filter(user__id=user_filter)
+        # If user_filter is empty string, show all (user selected "所有負責人")
 
         if city_filter:
             queryset = queryset.filter(city__id=city_filter)
-        if user_filter:
-            queryset = queryset.filter(user__id=user_filter)
 
         # Keyword Search
         search_query = self.request.GET.get('q')
@@ -174,8 +193,14 @@ class CaseListView(LoginRequiredMixin, ListView):
         context['sort_by'] = self.request.GET.get('sort_by', 'stopBuyDate') # Default to stopBuyDate for initial view
         context['order'] = self.request.GET.get('order', 'desc')
         context['search_query'] = self.request.GET.get('q', '')
+        # Default status to '在途' if not specified (first visit)
+        context['selected_status'] = self.request.GET.get('status', '在途')
         context['selected_city'] = self.request.GET.get('city', '')
-        context['selected_user'] = self.request.GET.get('user', '')
+        # Default user to current logged-in user if not specified (first visit)
+        if self.request.user.is_authenticated:
+            context['selected_user'] = self.request.GET.get('user', str(self.request.user.id))
+        else:
+            context['selected_user'] = self.request.GET.get('user', '')
         context['page_size'] = self.request.GET.get('page_size', self.paginate_by)
         
         # Add all cities for filter dropdown
