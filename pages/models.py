@@ -328,7 +328,8 @@ class Result(models.Model):
     ("第三人搶標", "第三人搶標"),
     ("等待優購", "等待優購"),
     ("遭優購", "遭優購"),
-    ("無人優購", "無人優購")
+    ("無人優購", "無人優購"),
+    ("四拍流標", "四拍流標")
   ]
 
   cases = models.ForeignKey(Cases, related_name='results', on_delete=models.CASCADE, verbose_name=u'案件')
@@ -515,6 +516,9 @@ class Auction(models.Model):
 
   def __str__(self):
     return f"{self.cases.caseNumber} - {self.type or ''} ({self.auctionDate or ''})"
+
+  class Meta:
+    ordering = ['auctionDate', 'id']
 
 
 class OfficialDocuments(models.Model):

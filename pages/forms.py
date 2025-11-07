@@ -259,7 +259,8 @@ class ResultForm(forms.ModelForm):
             ("第三人搶標", "第三人搶標"),
             ("等待優購", "等待優購"),
             ("遭優購", "遭優購"),
-            ("無人優購", "無人優購")
+            ("無人優購", "無人優購"),
+            ("四拍流標", "四拍流標"),
         ],
         required=False,
         widget=forms.Select(attrs={"class": "form-select"}),
