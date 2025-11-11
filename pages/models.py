@@ -101,9 +101,29 @@ class Cases(models.Model):
     super().save(*args, **kwargs)
 
   def fullAddress(self):
+    def _is_valid(value):
+      return value and value.strip().upper() != 'NULL'
+
+    land_sections = ''.join(
+      filter(
+        _is_valid,
+        [
+          self.bigSection,
+          self.smallSection
+        ]
+      )
+    )
+
+    if self.township:
+      township_part = self.township.name
+      if land_sections:
+        township_part += land_sections
+    else:
+      township_part = land_sections
+
     address_parts = [
         self.city.name if self.city else '',
-        self.township.name if self.township else '',
+        township_part,
         self.village,
         self.neighbor,
         self.street,
@@ -114,7 +134,7 @@ class Cases(models.Model):
         self.Floor
     ]
     # Filter out empty strings and the string 'NULL'
-    return ''.join(filter(lambda x: x and x.strip().upper() != 'NULL', address_parts))
+    return ''.join(filter(_is_valid, address_parts))
 
   @property
   def case_number_and_address(self):
