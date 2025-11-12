@@ -104,22 +104,10 @@ class Cases(models.Model):
     def _is_valid(value):
       return value and value.strip().upper() != 'NULL'
 
-    land_sections = ''.join(
-      filter(
-        _is_valid,
-        [
-          self.bigSection,
-          self.smallSection
-        ]
-      )
-    )
-
     if self.township:
       township_part = self.township.name
-      if land_sections:
-        township_part += land_sections
     else:
-      township_part = land_sections
+      township_part = ''
 
     address_parts = [
         self.city.name if self.city else '',
