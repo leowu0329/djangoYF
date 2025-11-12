@@ -749,13 +749,12 @@ class BounsDeleteView(LoginRequiredMixin, DeleteView):
     model = Bouns
     template_name = 'bouns/bouns_confirm_delete.html'
 
+    def get_success_url(self):
+        return reverse('case_detail', args=[self.object.objectbuild.cases_id])
+
     def delete(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        case_id = self.object.objectbuild.cases_id
         messages.success(self.request, "加成資料已刪除！")
-        response = super().delete(request, *args, **kwargs)
-        self.success_url = reverse_lazy('case_detail', args=[case_id])
-        return response
+        return super().delete(request, *args, **kwargs)
 
 # Auction CRUD
 class AuctionCreateView(LoginRequiredMixin, CreateView):
