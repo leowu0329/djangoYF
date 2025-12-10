@@ -10,19 +10,76 @@
     <div class="card-body">
       <form method="post">
         {% csrf_token %}
-        {% for field in form %}
-          <div class="mb-3">
-            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {% if field.field.widget.attrs.class %}
-              {{ field }}
-            {% else %}
-              {{ field|add_class:"form-control" }}
-            {% endif %}
-            {% for error in field.errors %}
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.user_select.id_for_label }}">{{ form.user_select.label }}</label>
+          {{ form.user_select }}
+          {% if form.user_select.help_text %}
+            <small class="form-text text-muted">{{ form.user_select.help_text }}</small>
+          {% endif %}
+          {% for error in form.user_select.errors %}
+            <div class="alert alert-danger mt-1">{{ error }}</div>
+          {% endfor %}
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+          {{ form.name }}
+          {% for error in form.name.errors %}
+            <div class="alert alert-danger mt-1">{{ error }}</div>
+          {% endfor %}
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.type.id_for_label }}">{{ form.type.label }}</label>
+          {{ form.type }}
+          {% for error in form.type.errors %}
+            <div class="alert alert-danger mt-1">{{ error }}</div>
+          {% endfor %}
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+          {{ form.phone }}
+          {% for error in form.phone.errors %}
+            <div class="alert alert-danger mt-1">{{ error }}</div>
+          {% endfor %}
+        </div>
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label" for="{{ form.holdingShareNumerator.id_for_label }}">{{ form.holdingShareNumerator.label }}</label>
+            {{ form.holdingShareNumerator }}
+            {% for error in form.holdingShareNumerator.errors %}
               <div class="alert alert-danger mt-1">{{ error }}</div>
             {% endfor %}
           </div>
-        {% endfor %}
+          <div class="col-md-6">
+            <label class="form-label" for="{{ form.holdingShareDenominator.id_for_label }}">{{ form.holdingShareDenominator.label }}</label>
+            {{ form.holdingShareDenominator }}
+            {% for error in form.holdingShareDenominator.errors %}
+              <div class="alert alert-danger mt-1">{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label" for="{{ form.investmentNumerator.id_for_label }}">{{ form.investmentNumerator.label }}</label>
+            {{ form.investmentNumerator }}
+            {% for error in form.investmentNumerator.errors %}
+              <div class="alert alert-danger mt-1">{{ error }}</div>
+            {% endfor %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="{{ form.investmentDenominator.id_for_label }}">{{ form.investmentDenominator.label }}</label>
+            {{ form.investmentDenominator }}
+            {% for error in form.investmentDenominator.errors %}
+              <div class="alert alert-danger mt-1">{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.remark.id_for_label }}">{{ form.remark.label }}</label>
+          {{ form.remark }}
+          {% for error in form.remark.errors %}
+            <div class="alert alert-danger mt-1">{{ error }}</div>
+          {% endfor %}
+        </div>
         <div class="d-flex justify-content-end">
           <button type="submit" class="btn btn-primary me-2">Save</button>
           <a href="{% if form.instance.pk %}{% url 'case_detail' form.instance.cases_id %}{% else %}{% url 'case_detail' case.id %}{% endif %}" class="btn btn-outline-secondary">Cancel</a>
@@ -31,4 +88,35 @@
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const userSelect = document.getElementById('id_user_select');
+  const nameInput = document.getElementById('id_name');
+  
+  if (userSelect && nameInput) {
+    // 當選擇了用戶時，自動填入姓名欄位
+    userSelect.addEventListener('change', function() {
+      if (this.value) {
+        nameInput.value = this.value;
+        // 禁用姓名欄位，因為已經從下拉選單選擇了
+        nameInput.readOnly = true;
+      } else {
+        // 清空選擇時，允許自行輸入
+        nameInput.readOnly = false;
+        if (!nameInput.value) {
+          nameInput.value = '';
+        }
+      }
+    });
+    
+    // 如果姓名欄位有值但下拉選單沒有選擇，允許編輯
+    if (nameInput.value && !userSelect.value) {
+      nameInput.readOnly = false;
+    } else if (nameInput.value && userSelect.value) {
+      nameInput.readOnly = true;
+    }
+  }
+});
+</script>
 {% endblock %}

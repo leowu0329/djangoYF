@@ -13,15 +13,29 @@
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label">勘查員</label>
-            {{ form.bounsPerson|add_class:"form-control" }}
+            {{ form.bounsPerson|add_class:"form-select" }}
+            {% if form.instance.pk and form.instance.bounsPerson %}
+            {# Hidden input to preserve bounsPerson value when field is disabled #}
+            <input type="hidden" name="bounsPerson" value="{{ form.instance.bounsPerson.id }}" id="id_bounsPerson_hidden">
+            <script>
+              // Ensure the select field shows the correct selected value
+              document.addEventListener('DOMContentLoaded', function() {
+                var selectField = document.getElementById('id_bounsPerson');
+                var hiddenField = document.getElementById('id_bounsPerson_hidden');
+                if (selectField && hiddenField) {
+                  selectField.value = hiddenField.value;
+                }
+              });
+            </script>
+            {% endif %}
           </div>
           <div class="col-md-6">
             <label class="form-label">加成</label>
-            {{ form.bounsRate|add_class:"form-control" }}
+            {{ form.bounsRate|add_class:"form-select" }}
           </div>
           <div class="col-md-12">
             <label class="form-label">加成原因</label>
-            {{ form.bounsReason|add_class:"form-control" }}
+            {{ form.bounsReason|add_class:"form-select" }}
           </div>
           {{ form.objectbuild }}
         </div>

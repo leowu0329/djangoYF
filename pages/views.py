@@ -326,10 +326,18 @@ class LandCreateView(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse('case_detail', args=[self.case.pk])
 
-class LandUpdateView(LoginRequiredMixin, UpdateView):
+class LandUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Land
     form_class = LandForm
     template_name = 'lands/land_form.html'
+
+    def test_func(self):
+        """只有該案件的負責人可以編輯"""
+        land = self.get_object()
+        # 檢查是否為該案件的負責人
+        if land.cases.user and self.request.user == land.cases.user:
+            return True
+        return False
 
     def form_valid(self, form):
         messages.success(self.request, "土地資料已更新！")
@@ -338,9 +346,17 @@ class LandUpdateView(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse('case_detail', args=[self.object.cases_id])
 
-class LandDeleteView(LoginRequiredMixin, DeleteView):
+class LandDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Land
     template_name = 'lands/land_confirm_delete.html'
+
+    def test_func(self):
+        """只有該案件的負責人可以刪除"""
+        land = self.get_object()
+        # 檢查是否為該案件的負責人
+        if land.cases.user and self.request.user == land.cases.user:
+            return True
+        return False
 
     def get_success_url(self):
         return reverse('case_detail', args=[self.object.cases.pk])
@@ -518,6 +534,40 @@ class FinalDecisionCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.cases = self.case
+        # 根據選擇的人員自動設置工作轄區
+        name = form.cleaned_data.get('name')
+        if name:
+            try:
+                # 優先根據nickname查找，如果找不到再根據username查找
+                user = CustomUser.objects.filter(
+                    profile__nickname=name,
+                    is_active=True,
+                    is_staff=True
+                ).select_related('profile').first()
+                
+                # 如果根據nickname找不到，再根據username查找
+                if not user:
+                    user = CustomUser.objects.filter(
+                        username=name,
+                        is_active=True,
+                        is_staff=True
+                    ).select_related('profile').first()
+                
+                if user:
+                    # 確保profile存在
+                    if not hasattr(user, 'profile'):
+                        from users.models import Profile
+                        Profile.objects.get_or_create(user=user)
+                    
+                    if user.profile and user.profile.work_area:
+                        # 直接存儲 Profile.work_area 的值（key）
+                        form.instance.workArea = user.profile.work_area
+                        print(f"DEBUG: Setting workArea to {form.instance.workArea} for user {user.username}")
+            except Exception as e:
+                import traceback
+                print(f"Error setting workArea: {e}")
+                print(traceback.format_exc())
+        
         messages.success(self.request, "最終判定已新增！")
         return super().form_valid(form)
 
@@ -530,6 +580,41 @@ class FinalDecisionUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'finaldecisions/finaldecision_form.html'
 
     def form_valid(self, form):
+        # 根據選擇的人員自動設置工作轄區
+        # name 現在存儲的是 nickname（如果有的話）或 username
+        name = form.cleaned_data.get('name')
+        if name:
+            try:
+                # 優先根據nickname查找，如果找不到再根據username查找
+                user = CustomUser.objects.filter(
+                    profile__nickname=name,
+                    is_active=True,
+                    is_staff=True
+                ).select_related('profile').first()
+                
+                # 如果根據nickname找不到，再根據username查找
+                if not user:
+                    user = CustomUser.objects.filter(
+                        username=name,
+                        is_active=True,
+                        is_staff=True
+                    ).select_related('profile').first()
+                
+                if user:
+                    # 確保profile存在
+                    if not hasattr(user, 'profile'):
+                        from users.models import Profile
+                        Profile.objects.get_or_create(user=user)
+                    
+                    if user.profile and user.profile.work_area:
+                        # 直接存儲 Profile.work_area 的值（key）
+                        form.instance.workArea = user.profile.work_area
+                        print(f"DEBUG: Setting workArea to {form.instance.workArea} for user {user.username}")
+            except Exception as e:
+                import traceback
+                print(f"Error setting workArea: {e}")
+                print(traceback.format_exc())
+        
         messages.success(self.request, "最終判定已更新！")
         return super().form_valid(form)
 
@@ -715,6 +800,9 @@ class BounsCreateView(LoginRequiredMixin, CreateView):
         print("form_valid: Before assigning objectbuild")
         try:
             form.instance.objectbuild = self.objectbuild
+            # Set bounsPerson to current user if not already set (for disabled field)
+            if not form.instance.bounsPerson and self.request.user.is_authenticated:
+                form.instance.bounsPerson = self.request.user
             print(f"form_valid: After assigning objectbuild. objectbuild ID: {form.instance.objectbuild.id}")
             # messages.success(self.request, "加成資料已新增！") # Temporarily removed
             response = super().form_valid(form)
@@ -733,21 +821,47 @@ class BounsCreateView(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse('case_detail', args=[self.objectbuild.cases_id])
 
-class BounsUpdateView(LoginRequiredMixin, UpdateView):
+class BounsUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Bouns
     form_class = BounsForm
     template_name = 'bouns/bouns_form.html'
 
+    def test_func(self):
+        """管理者或該記錄的勘查員可以編輯"""
+        bouns = self.get_object()
+        # 檢查是否為管理者
+        if self.request.user.is_staff:
+            return True
+        # 檢查是否為該記錄的勘查員
+        if bouns.bounsPerson and self.request.user == bouns.bounsPerson:
+            return True
+        return False
+
     def form_valid(self, form):
+        """如果是管理者修改，確保勘查員不變"""
+        # 如果是管理者，保持原有的勘查員不變
+        if self.request.user.is_staff:
+            form.instance.bounsPerson = self.object.bounsPerson
         messages.success(self.request, "加成資料已更新！")
         return super().form_valid(form)
 
     def get_success_url(self):
         return reverse('case_detail', args=[self.object.objectbuild.cases_id])
 
-class BounsDeleteView(LoginRequiredMixin, DeleteView):
+class BounsDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Bouns
     template_name = 'bouns/bouns_confirm_delete.html'
+
+    def test_func(self):
+        """管理者或該記錄的勘查員可以刪除"""
+        bouns = self.get_object()
+        # 檢查是否為管理者
+        if self.request.user.is_staff:
+            return True
+        # 檢查是否為該記錄的勘查員
+        if bouns.bounsPerson and self.request.user == bouns.bounsPerson:
+            return True
+        return False
 
     def get_success_url(self):
         return reverse('case_detail', args=[self.object.objectbuild.cases_id])

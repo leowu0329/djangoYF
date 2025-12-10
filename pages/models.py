@@ -149,7 +149,8 @@ class Cases(models.Model):
     from django.db.models import Count # Import Count here
     debtors_count = self.people.filter(type='債務人').count()
     creditors_count = self.people.filter(type='債權人').count()
-    return f"債務人({debtors_count})/債權人({creditors_count})"
+    co_owners_count = self.people.filter(type='共有人').count()
+    return f"債務人({debtors_count})/債權人({creditors_count})/共有人({co_owners_count})"
 
   @property
   def avg_objectbuild_calculate_display(self):
@@ -288,6 +289,11 @@ class Person(models.Model):
   name = models.CharField(u'姓名', max_length=30)
   type = models.CharField(u'分類', max_length=30)
   phone = models.CharField(u'電話', max_length=30, null=True, blank=True)
+  holdingShareNumerator = models.PositiveIntegerField(u'持分比例(個人)', null=True, blank=True)
+  holdingShareDenominator = models.PositiveIntegerField(u'持分比例(所有)', null=True, blank=True)
+  investmentNumerator = models.PositiveIntegerField(u'投資比例(個人)', null=True, blank=True)
+  investmentDenominator = models.PositiveIntegerField(u'投資比例(所有)', null=True, blank=True)
+  remark = models.CharField(u'備註', max_length=500, null=True, blank=True)
   created = models.DateTimeField(u'建立時間', auto_now=False, auto_now_add=True)
   updated = models.DateTimeField(u'更新時間', auto_now=True, auto_now_add=False)
 
@@ -319,7 +325,7 @@ class FinalDecision(models.Model):
   finalDecision = models.CharField(u'最終判定', max_length=10, null=True, blank=True)
   remark = models.CharField(u'備註', max_length=3000, null=True, blank=True)
   type = models.CharField(u'分類', max_length=3000, null=True, blank=True)
-  name = models.CharField(u'人員', max_length=10, null=True, blank=True)
+  name = models.CharField(u'人員', max_length=150, null=True, blank=True)
   date = models.DateField(u'日期', null=True, blank=True)
   workArea = models.CharField(u'工作轄區', max_length=10, null=True, blank=True)
   created = models.DateTimeField(u'建立時間', auto_now=False, auto_now_add=True)

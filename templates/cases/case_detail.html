@@ -169,7 +169,7 @@
                       <td>{{ land.holdingPointAll }}</td>
                       <td>{{ land.calculatedArea }}</td>
                       <td class="text-end">
-                        {% if user.profile.role == 'admin' or user == case.user %}
+                        {% if user == case.user %}
                         <a href="{% url 'land_update' land.id %}" class="btn btn-sm btn-outline-primary">
                           <i class="bi bi-pencil"></i>
                         </a>
@@ -271,6 +271,9 @@
                     <th class="text-center align-middle">姓名</th>
                     <th class="text-center align-middle">分類</th>
                     <th class="text-center align-middle">電話</th>
+                    <th class="text-center align-middle">持分比例</th>
+                    <th class="text-center align-middle">投資比例</th>
+                    <th class="text-center align-middle">備註</th>
                     <th class="text-center align-middle">操作</th>
                   </tr>
                 </thead>
@@ -279,7 +282,22 @@
                     <tr>
                       <td>{{ person.name }}</td>
                       <td>{{ person.type }}</td>
-                      <td>{{ person.phone }}</td>
+                      <td>{{ person.phone|default:"" }}</td>
+                      <td>
+                        {% if person.holdingShareNumerator and person.holdingShareDenominator %}
+                          {{ person.holdingShareNumerator }}/{{ person.holdingShareDenominator }}
+                        {% else %}
+                          —
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if person.investmentNumerator and person.investmentDenominator %}
+                          {{ person.investmentNumerator }}/{{ person.investmentDenominator }}
+                        {% else %}
+                          —
+                        {% endif %}
+                      </td>
+                      <td style="word-wrap: break-word; white-space: pre-wrap; max-width: 300px;">{{ person.remark|default:"" }}</td>
                       <td class="text-end">
                         {% if user.profile.role == 'admin' or user == case.user %}
                         <a href="{% url 'person_update' person.id %}" class="btn btn-sm btn-outline-primary">
@@ -292,7 +310,7 @@
                       </td>
                     </tr>
                   {% empty %}
-                    <tr><td colspan="4" class="text-center text-muted">無人員記錄。</td></tr>
+                    <tr><td colspan="7" class="text-center text-muted">無人員記錄。</td></tr>
                   {% endfor %}
                 </tbody>
               </table>
@@ -392,8 +410,20 @@
                       <td>{{ fd.type }}</td>
                       <td>{{ fd.name }}</td>
                       <td>{{ fd.date|date:"Y-m-d"|default:"—" }}</td>
-                      <td>{{ fd.workArea }}</td>
-                      <td class="text-truncate" style="max-width: 420px;">{{ fd.remark }}</td>
+                      <td>
+                        {% if fd.workArea == 'north' %}
+                          雙北桃竹苗
+                        {% elif fd.workArea == 'central' %}
+                          中彰投
+                        {% elif fd.workArea == 'south' %}
+                          雲嘉南
+                        {% elif fd.workArea == 'kaoping' %}
+                          高高屏
+                        {% else %}
+                          {{ fd.workArea|default:"—" }}
+                        {% endif %}
+                      </td>
+                      <td style="word-wrap: break-word; white-space: pre-wrap; max-width: 500px;">{{ fd.remark }}</td>
                       <td class="text-end">
                         {% if user.profile.role == 'admin' or user == case.user %}
                         <a href="{% url 'finaldecision_update' fd.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
@@ -514,7 +544,7 @@
                                   <td>{{ bouns.bounsRate }}</td>
                                   <td>{{ bouns.bounsReason }}</td>
                                   <td>
-                                    {% if user.profile.role == 'admin' or user == bouns.bounsPerson %}
+                                    {% if user.is_staff or user == bouns.bounsPerson %}
                                     <a href="{% url 'bouns_update' bouns.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
                                     <a href="{% url 'bouns_delete' bouns.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
                                     {% endif %}
@@ -573,6 +603,7 @@
                     <th class="text-center align-middle">點閱</th>
                     <th class="text-center align-middle">監控</th>
                     <th class="text-center align-middle">成交件數</th>
+                    <th class="text-center align-middle">建議加價</th>
                     <th class="text-center align-middle">保証金</th>
                     <th class="text-center align-middle">操作</th>
                   </tr>
@@ -582,7 +613,27 @@
                     <tr>
                       <td>{{ auction.type }}</td>
                       <td>{{ auction.auctionDate|date:"Y-m-d" }}</td>
-                      <td>{{ auction.floorPrice }}</td>
+                      <td>
+                        <div>{{ auction.floorPrice }}</div>
+                        {% if auction.floorPrice %}
+                          {% if auction.type == '1拍' %}
+                            <div class="mt-1 suggested-prices" data-floor-price="{{ auction.floorPrice }}" data-auction-type="1拍" style="font-size: 0.85em; color: #6c757d;">
+                              <div>二拍建議底價：<span class="fw-bold text-primary suggested-2nd"></span></div>
+                              <div>三拍建議底價：<span class="fw-bold text-primary suggested-3rd"></span></div>
+                              <div>四拍建議底價：<span class="fw-bold text-primary suggested-4th"></span></div>
+                            </div>
+                          {% elif auction.type == '2拍' %}
+                            <div class="mt-1 suggested-prices" data-floor-price="{{ auction.floorPrice }}" data-auction-type="2拍" style="font-size: 0.85em; color: #6c757d;">
+                              <div>三拍建議底價：<span class="fw-bold text-primary suggested-3rd"></span></div>
+                              <div>四拍建議底價：<span class="fw-bold text-primary suggested-4th"></span></div>
+                            </div>
+                          {% elif auction.type == '3拍' %}
+                            <div class="mt-1 suggested-prices" data-floor-price="{{ auction.floorPrice }}" data-auction-type="3拍" style="font-size: 0.85em; color: #6c757d;">
+                              <div>四拍建議底價：<span class="fw-bold text-primary suggested-4th"></span></div>
+                            </div>
+                          {% endif %}
+                        {% endif %}
+                      </td>
                       <td>{{ auction.pingPrice }}</td>
                       <td>
                         {% if auction.type == '1拍' and auction.calculated_cp_value > 0.92 or auction.type == '2拍' and auction.calculated_cp_value > 1.15 or auction.type == '3拍' and auction.calculated_cp_value > 1.44 or auction.type == '4拍' and auction.calculated_cp_value > 1.80 %}
@@ -594,6 +645,18 @@
                       <td>{{ auction.click }}</td>
                       <td>{{ auction.monitor }}</td>
                       <td>{{ auction.caseCount }}</td>
+                      <td>
+                        <div class="suggested-price-increase" 
+                             data-floor-price="{{ auction.floorPrice }}" 
+                             data-case-count="{{ auction.caseCount }}" 
+                             data-ping-price="{{ auction.pingPrice }}"
+                             data-avg-calculate="{{ auction.avg_objectbuild_calculate_display }}"
+                             style="font-size: 0.85em;">
+                          <div>a = <span class="fw-bold text-primary suggested-a">—</span></div>
+                          <div>b = <span class="fw-bold text-primary suggested-b">—</span></div>
+                          <div>建議加價：<span class="fw-bold text-success suggested-final">—</span></div>
+                        </div>
+                      </td>
                       <td>{{ auction.margin }}</td>
                       <td class="text-end">
                         {% if user.profile.role == 'admin' or user == case.user %}
@@ -603,7 +666,7 @@
                       </td>
                     </tr>
                   {% empty %}
-                    <tr><td colspan="10" class="text-center text-muted">無拍賣記錄。</td></tr>
+                    <tr><td colspan="11" class="text-center text-muted">無拍賣記錄。</td></tr>
                   {% endfor %}
                 </tbody>
               </table>
@@ -698,6 +761,97 @@
         console.warn('No tab button found for hash:', hash);
       }
     }
+  });
+
+  // 計算並顯示建議底價
+  document.addEventListener('DOMContentLoaded', function() {
+    function formatNumber(num) {
+      return Math.round(num).toLocaleString('zh-TW');
+    }
+
+    const suggestedPricesDivs = document.querySelectorAll('.suggested-prices');
+    suggestedPricesDivs.forEach(function(div) {
+      const floorPrice = parseFloat(div.getAttribute('data-floor-price'));
+      const auctionType = div.getAttribute('data-auction-type');
+      
+      if (!isNaN(floorPrice) && floorPrice > 0) {
+        if (auctionType === '1拍') {
+          // 1拍：顯示二拍、三拍、四拍建議底價
+          const price2nd = floorPrice * 0.8;
+          const price3rd = floorPrice * 0.64;
+          const price4th = floorPrice * 0.512;
+
+          const suggested2nd = div.querySelector('.suggested-2nd');
+          const suggested3rd = div.querySelector('.suggested-3rd');
+          const suggested4th = div.querySelector('.suggested-4th');
+
+          if (suggested2nd) suggested2nd.textContent = formatNumber(price2nd);
+          if (suggested3rd) suggested3rd.textContent = formatNumber(price3rd);
+          if (suggested4th) suggested4th.textContent = formatNumber(price4th);
+        } else if (auctionType === '2拍') {
+          // 2拍：顯示三拍、四拍建議底價
+          const price3rd = floorPrice * 0.8;
+          const price4th = floorPrice * 0.64;
+
+          const suggested3rd = div.querySelector('.suggested-3rd');
+          const suggested4th = div.querySelector('.suggested-4th');
+
+          if (suggested3rd) suggested3rd.textContent = formatNumber(price3rd);
+          if (suggested4th) suggested4th.textContent = formatNumber(price4th);
+        } else if (auctionType === '3拍') {
+          // 3拍：顯示四拍建議底價
+          const price4th = floorPrice * 0.8;
+
+          const suggested4th = div.querySelector('.suggested-4th');
+
+          if (suggested4th) suggested4th.textContent = formatNumber(price4th);
+        }
+      }
+    });
+
+    // 計算並顯示建議加價
+    const suggestedPriceIncreaseDivs = document.querySelectorAll('.suggested-price-increase');
+    suggestedPriceIncreaseDivs.forEach(function(div) {
+      const floorPrice = parseFloat(div.getAttribute('data-floor-price'));
+      const caseCount = parseFloat(div.getAttribute('data-case-count')) || 0;
+      const pingPrice = parseFloat(div.getAttribute('data-ping-price'));
+      const avgCalculate = parseFloat(div.getAttribute('data-avg-calculate'));
+
+      if (!isNaN(floorPrice) && floorPrice > 0 && !isNaN(pingPrice) && pingPrice > 0 && !isNaN(avgCalculate) && avgCalculate > 0) {
+        // 計算 a = 底價 * (1 + 成交件數 / 4.5 / 100)
+        const a = floorPrice * (1 + caseCount / 4.5 / 100);
+
+        // 計算 b = 底價 * ((時價/坪價) / 1.6)
+        // 時價/坪價 不得低於1.6
+        const ratio = Math.max(avgCalculate / pingPrice, 1.6);
+        const b = floorPrice * (ratio / 1.6);
+
+        // 若 a > b，以 b 為加價依據，反之，則為 a
+        const suggestedPrice = a > b ? b : a;
+
+        const suggestedA = div.querySelector('.suggested-a');
+        const suggestedB = div.querySelector('.suggested-b');
+        const suggestedFinal = div.querySelector('.suggested-final');
+
+        if (suggestedA) suggestedA.textContent = formatNumber(a);
+        if (suggestedB) suggestedB.textContent = formatNumber(b);
+        if (suggestedFinal) suggestedFinal.textContent = formatNumber(suggestedPrice);
+      }
+    });
+  });
+
+  // 將所有 tab 標題中的括號內容（含括號）設為粗體紅字
+  document.addEventListener('DOMContentLoaded', function() {
+    const tabButtons = document.querySelectorAll('.nav-link');
+    tabButtons.forEach(function(button) {
+      const text = button.innerHTML;
+      // 使用正則表達式匹配括號內的內容（含括號）
+      const regex = /(\([^)]*\))/g;
+      const newText = text.replace(regex, '<span style="font-weight: bold; color: red;">$1</span>');
+      if (newText !== text) {
+        button.innerHTML = newText;
+      }
+    });
   });
 </script>
 {% endblock %}

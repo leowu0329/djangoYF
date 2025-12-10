@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import Q
 from .models import Cases, Land, Build, Person, Survey, FinalDecision, Result, ObjectBuild, Bouns, Auction, City, Township, OfficialDocuments
 from users.models import CustomUser
 
@@ -53,6 +54,7 @@ USE_PARTITION_CHOICES = [
 PERSON_TYPE_CHOICES = [
 	("債務人", "債務人"),
 	("債權人", "債權人"),
+	("共有人", "共有人"),
 ]
 
 FINAL_TYPE_CHOICES = [
@@ -201,12 +203,35 @@ class PersonForm(forms.ModelForm):
 		widget=forms.Select(attrs={"class": "form-select"}),
 		label='分類',
 	)
+	user_select = forms.ChoiceField(
+		choices=[],
+		widget=forms.Select(attrs={"class": "form-select"}),
+		label='選擇人員',
+		required=False,
+		help_text='可選擇現有用戶或自行輸入姓名'
+	)
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		# 獲取所有 is_staff=True 的用戶
+		staff_users = CustomUser.objects.filter(is_staff=True).select_related('profile')
+		choices = [("", "--- 請選擇或自行輸入 ---")]
+		for user in staff_users:
+			display_name = user.profile.nickname if hasattr(user, 'profile') and user.profile.nickname else user.username
+			choices.append((display_name, display_name))
+		self.fields['user_select'].choices = choices
+
 	class Meta:
 		model = Person
-		fields = ["name", "type", "phone"]
+		fields = ["name", "type", "phone", "holdingShareNumerator", "holdingShareDenominator", "investmentNumerator", "investmentDenominator", "remark"]
 		widgets = {
-			"name": forms.TextInput(attrs={"class": "form-control"}),
+			"name": forms.TextInput(attrs={"class": "form-control", "id": "id_name"}),
 			"phone": forms.TextInput(attrs={"class": "form-control"}),
+			"holdingShareNumerator": forms.NumberInput(attrs={"class": "form-control", "min": "0", "step": "1"}),
+			"holdingShareDenominator": forms.NumberInput(attrs={"class": "form-control", "min": "0", "step": "1"}),
+			"investmentNumerator": forms.NumberInput(attrs={"class": "form-control", "min": "0", "step": "1"}),
+			"investmentDenominator": forms.NumberInput(attrs={"class": "form-control", "min": "0", "step": "1"}),
+			"remark": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
 		}
 
 class SurveyForm(forms.ModelForm):
@@ -240,14 +265,30 @@ class SurveyForm(forms.ModelForm):
 class FinalDecisionForm(forms.ModelForm):
 	finalDecision = forms.ChoiceField(choices=FINAL_DECISION_CHOICES, widget=forms.Select(attrs={"class": "form-select"}), label='最終判定', required=False)
 	type = forms.ChoiceField(choices=FINAL_TYPE_CHOICES, widget=forms.Select(attrs={"class": "form-select"}), label='分類', required=False)
-	workArea = forms.ChoiceField(choices=WORK_AREA_CHOICES, widget=forms.Select(attrs={"class": "form-select"}), label='工作轄區', required=False)
 	date = forms.DateField(widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}), label='日期', required=False)
+	name = forms.ChoiceField(choices=[], widget=forms.Select(attrs={"class": "form-select"}), label='人員', required=False)
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		# 獲取所有 is_active=True 且 is_staff=True 的用戶
+		# 使用 nickname（如果有的話）或 username 作為值和顯示名稱
+		active_staff_users = CustomUser.objects.filter(is_active=True, is_staff=True).select_related('profile')
+		choices = [("", "")]
+		for user in active_staff_users:
+			display_name = user.profile.nickname if hasattr(user, 'profile') and user.profile.nickname else user.username
+			# 使用 nickname 或 username 作為值
+			choices.append((display_name, display_name))
+		self.fields['name'].choices = choices
+		
+		# 處理編輯模式：如果實例有 name 值，直接使用（因為現在存儲的就是 nickname 或 username）
+		if self.instance and self.instance.pk and self.instance.name:
+			self.fields['name'].initial = self.instance.name
+
 	class Meta:
 		model = FinalDecision
-		fields = ["finalDecision", "remark", "type", "name", "date", "workArea"]
+		fields = ["finalDecision", "remark", "type", "name", "date"]
 		widgets = {
 			"remark": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
-			"name": forms.TextInput(attrs={"class": "form-control"}),
 		}
 
 
@@ -310,16 +351,65 @@ class BounsForm(forms.ModelForm):
         required=False,
         widget=forms.Select(attrs={'class': 'form-select', 'disabled': True}),
     )
+    
+    bounsRate = forms.ChoiceField(
+        choices=[
+            ("0.00", "0%"),
+            ("0.05", "+5%"),
+            ("0.10", "+10%"),
+            ("-0.05", "-5%"),
+            ("-0.10", "-10%"),
+        ],
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='加成',
+        initial="0.00",
+    )
+    
+    bounsReason = forms.ChoiceField(
+        choices=[
+            ("", ""),
+            ("屋況", "屋況"),
+            ("臨路寬度", "臨路寬度"),
+            ("連外方便性", "連外方便性"),
+            ("房價走勢", "房價走勢"),
+        ],
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='加成原因',
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['bounsPerson'].label_from_instance = lambda obj: obj.profile.nickname if hasattr(obj, 'profile') and obj.profile.nickname else obj.username
         
         # Set initial value for bounsPerson in the form
-        if 'initial' in kwargs and 'bounsPerson' in kwargs['initial']:
-            self.fields['bounsPerson'].initial = kwargs['initial']['bounsPerson']
-        elif self.instance and self.instance.bounsPerson:
+        # Priority: instance value > initial kwargs value
+        if self.instance and self.instance.pk and self.instance.bounsPerson:
+            # For update view, use the instance's bounsPerson
             self.fields['bounsPerson'].initial = self.instance.bounsPerson
+        elif 'initial' in kwargs and 'bounsPerson' in kwargs['initial']:
+            # For create view, use initial value
+            self.fields['bounsPerson'].initial = kwargs['initial']['bounsPerson']
+        
+        # Set initial value for bounsRate in the form
+        if self.instance and self.instance.bounsRate is not None:
+            # Convert Decimal to string for ChoiceField
+            rate_value = f"{self.instance.bounsRate:.2f}"
+            # Check if the value exists in choices, otherwise default to "0.00"
+            valid_choices = [choice[0] for choice in self.fields['bounsRate'].choices]
+            if rate_value in valid_choices:
+                self.fields['bounsRate'].initial = rate_value
+            else:
+                self.fields['bounsRate'].initial = "0.00"
+    
+    def clean_bounsRate(self):
+        """Convert string choice value to Decimal for model field"""
+        from decimal import Decimal
+        value = self.cleaned_data.get('bounsRate')
+        if value and value != "":
+            return Decimal(value)
+        return Decimal('0.00')
 
 
     class Meta:
