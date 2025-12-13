@@ -373,10 +373,17 @@ class BounsForm(forms.ModelForm):
             ("臨路寬度", "臨路寬度"),
             ("連外方便性", "連外方便性"),
             ("房價走勢", "房價走勢"),
+            ("其他", "其他"),
         ],
         required=False,
-        widget=forms.Select(attrs={'class': 'form-select'}),
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_bounsReason'}),
         label='加成原因',
+    )
+    
+    bounsReasonOther = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'id_bounsReasonOther'}),
+        label='其他原因',
     )
 
     def __init__(self, *args, **kwargs):
@@ -402,6 +409,20 @@ class BounsForm(forms.ModelForm):
                 self.fields['bounsRate'].initial = rate_value
             else:
                 self.fields['bounsRate'].initial = "0.00"
+        
+        # Set initial value for bounsReason in the form
+        # Check if the current value is one of the predefined choices
+        if self.instance and self.instance.pk and self.instance.bounsReason:
+            predefined_choices = ["", "屋況", "臨路寬度", "連外方便性", "房價走勢", "其他"]
+            if self.instance.bounsReason in predefined_choices:
+                self.fields['bounsReason'].initial = self.instance.bounsReason
+                # If it's "其他" but we don't have a custom value, it might have been saved as "其他"
+                # In this case, we should check if there's a custom value in the database
+                # For now, we'll let the user enter a new value if needed
+            else:
+                # If the value is not in predefined choices, it's a custom "其他" value
+                self.fields['bounsReason'].initial = "其他"
+                self.fields['bounsReasonOther'].initial = self.instance.bounsReason
     
     def clean_bounsRate(self):
         """Convert string choice value to Decimal for model field"""
@@ -410,6 +431,23 @@ class BounsForm(forms.ModelForm):
         if value and value != "":
             return Decimal(value)
         return Decimal('0.00')
+    
+    def clean(self):
+        """Handle '其他' option for bounsReason"""
+        cleaned_data = super().clean()
+        bounsReason = cleaned_data.get('bounsReason')
+        bounsReasonOther = cleaned_data.get('bounsReasonOther')
+        
+        if bounsReason == "其他":
+            if not bounsReasonOther or bounsReasonOther.strip() == "":
+                raise forms.ValidationError({'bounsReasonOther': '請輸入其他原因'})
+            # Save the custom text to bounsReason
+            cleaned_data['bounsReason'] = bounsReasonOther.strip()
+        elif bounsReasonOther:
+            # Clear bounsReasonOther if not "其他" is selected
+            cleaned_data['bounsReasonOther'] = ""
+        
+        return cleaned_data
 
 
     class Meta:

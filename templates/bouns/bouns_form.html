@@ -36,6 +36,12 @@
           <div class="col-md-12">
             <label class="form-label">加成原因</label>
             {{ form.bounsReason|add_class:"form-select" }}
+            {% for error in form.bounsReason.errors %}<div class="alert alert-danger mt-1">{{ error }}</div>{% endfor %}
+          </div>
+          <div class="col-md-12" id="bounsReasonOtherContainer" style="display: none;">
+            <label class="form-label">{{ form.bounsReasonOther.label }}</label>
+            {{ form.bounsReasonOther }}
+            {% for error in form.bounsReasonOther.errors %}<div class="alert alert-danger mt-1">{{ error }}</div>{% endfor %}
           </div>
           {{ form.objectbuild }}
         </div>
@@ -48,4 +54,55 @@
     </div>
   </div>
 </div>
-{% endblock %}
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var bounsReasonSelect = document.getElementById('id_bounsReason');
+  var bounsReasonOtherContainer = document.getElementById('bounsReasonOtherContainer');
+  var bounsReasonOtherInput = document.getElementById('id_bounsReasonOther');
+  
+  function toggleOtherField() {
+    if (bounsReasonSelect && bounsReasonOtherContainer && bounsReasonOtherInput) {
+      if (bounsReasonSelect.value === '其他') {
+        bounsReasonOtherContainer.style.display = 'block';
+        bounsReasonOtherInput.style.display = 'block';
+        bounsReasonOtherInput.required = true;
+      } else {
+        bounsReasonOtherContainer.style.display = 'none';
+        bounsReasonOtherInput.style.display = 'none';
+        bounsReasonOtherInput.required = false;
+        // Only clear value if not in "其他" mode
+        if (bounsReasonSelect.value !== '其他') {
+          bounsReasonOtherInput.value = '';
+        }
+      }
+    }
+  }
+  
+  // Check if initial value is set for "其他" option
+  var initialBounsReason = '{{ form.bounsReason.initial|default:"" }}';
+  var initialBounsReasonOther = '{{ form.bounsReasonOther.initial|default:"" }}';
+  
+  // Initial check
+  toggleOtherField();
+  
+  // If editing and we have an "其他" value, set it up
+  if (initialBounsReason === '其他' || (initialBounsReasonOther && initialBounsReasonOther.trim() !== '')) {
+    if (bounsReasonSelect) {
+      bounsReasonSelect.value = '其他';
+      toggleOtherField();
+      if (bounsReasonOtherInput && initialBounsReasonOther) {
+        bounsReasonOtherInput.value = '{{ form.bounsReasonOther.initial|escapejs }}';
+      }
+    }
+  }
+  
+  // Listen for changes
+  if (bounsReasonSelect) {
+    bounsReasonSelect.addEventListener('change', toggleOtherField);
+  }
+});
+</script>
+{% endblock extra_js %}
