@@ -269,20 +269,32 @@ class FinalDecisionForm(forms.ModelForm):
 	name = forms.ChoiceField(choices=[], widget=forms.Select(attrs={"class": "form-select"}), label='人員', required=False)
 
 	def __init__(self, *args, **kwargs):
+		self.is_create = kwargs.pop('is_create', False)
 		super().__init__(*args, **kwargs)
-		# 獲取所有 is_active=True 且 is_staff=True 的用戶
-		# 使用 nickname（如果有的話）或 username 作為值和顯示名稱
-		active_staff_users = CustomUser.objects.filter(is_active=True, is_staff=True).select_related('profile')
-		choices = [("", "")]
-		for user in active_staff_users:
-			display_name = user.profile.nickname if hasattr(user, 'profile') and user.profile.nickname else user.username
-			# 使用 nickname 或 username 作為值
-			choices.append((display_name, display_name))
-		self.fields['name'].choices = choices
 		
-		# 處理編輯模式：如果實例有 name 值，直接使用（因為現在存儲的就是 nickname 或 username）
-		if self.instance and self.instance.pk and self.instance.name:
-			self.fields['name'].initial = self.instance.name
+		# 如果是创建模式，移除分类、人员、日期字段
+		if self.is_create:
+			if 'type' in self.fields:
+				del self.fields['type']
+			if 'name' in self.fields:
+				del self.fields['name']
+			if 'date' in self.fields:
+				del self.fields['date']
+		else:
+			# 編輯模式：保留所有字段
+			# 獲取所有 is_active=True 且 is_staff=True 的用戶
+			# 使用 nickname（如果有的話）或 username 作為值和顯示名稱
+			active_staff_users = CustomUser.objects.filter(is_active=True, is_staff=True).select_related('profile')
+			choices = [("", "")]
+			for user in active_staff_users:
+				display_name = user.profile.nickname if hasattr(user, 'profile') and user.profile.nickname else user.username
+				# 使用 nickname 或 username 作為值
+				choices.append((display_name, display_name))
+			self.fields['name'].choices = choices
+			
+			# 處理編輯模式：如果實例有 name 值，直接使用（因為現在存儲的就是 nickname 或 username）
+			if self.instance and self.instance.pk and self.instance.name:
+				self.fields['name'].initial = self.instance.name
 
 	class Meta:
 		model = FinalDecision

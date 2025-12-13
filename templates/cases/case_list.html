@@ -96,13 +96,13 @@
                 </a>
               </th>
               <th class="text-center align-middle" style="width: 7%;">
-                <a href="?q={{ search_query }}&status={{ selected_status }}&city={{ selected_city }}&user={{ selected_user }}&sort_by=stopBuyDate&order={% if sort_by == 'stopBuyDate' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-decoration-none text-dark">
+                <a href="?q={{ search_query }}&status={{ selected_status }}&city={{ selected_city }}&user={{ selected_user }}&sort_by=stopBuyDate&order={% if sort_by == 'stopBuyDate' and order == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark">
                     應買止日
                     {% if sort_by == 'stopBuyDate' %}
                         {% if order == 'asc' %}<i class="bi bi-arrow-up"></i>{% else %}<i class="bi bi-arrow-down"></i>{% endif %}
                     {% else %}
-                        {# Default to descending arrow if not sorted by stopBuyDate #}
-                        <i class="bi bi-arrow-down"></i>
+                        {# Default to ascending arrow if not sorted by stopBuyDate #}
+                        <i class="bi bi-arrow-up"></i>
                     {% endif %}
                 </a>
               </th>
@@ -133,7 +133,7 @@
                   {% endif %}
                 </td>
                 <td style="white-space: pre-line;"><a href="{% url 'case_detail' case.id %}" class="text-decoration-none">{{ case.case_number_and_address }}</a></td>
-                <td class="text-center align-middle {% if case.stop_buy_date_style == 'future-two-weeks' %}text-danger fw-bold{% endif %}">{{ case.display_stop_buy_date }}</td>
+                <td class="text-center align-middle {% if case.stop_buy_date_style %}{{ case.stop_buy_date_style }}{% endif %}">{{ case.display_stop_buy_date }}</td>
                 <td>{{ case.user.profile.nickname|default:case.user.username|default:"—" }}</td>
                 <td>{{ case.finaldecisions.last.finalDecision|default:"—" }}</td>
                 <td class="text-center align-middle">{{ case.results.last.actionResult|default:"—" }}</td>

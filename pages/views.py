@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.db.models import Q, Case, When, Value, BooleanField, F, Max # Import required database functions
+from django.db.models import Q, Case, When, Value, BooleanField, F, Max, Subquery, OuterRef, IntegerField # Import required database functions
 from datetime import date, timedelta
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
@@ -70,7 +70,7 @@ class CaseListView(LoginRequiredMixin, ListView):
         # Annotate latest stopBuyDate for each case
         queryset = Cases.objects.annotate(
             latest_stop_buy_date=Max('results__stopBuyDate')
-        ).select_related('city', 'township', 'user').prefetch_related('results', 'finaldecisions')
+        ).select_related('city', 'township', 'user').prefetch_related('results', 'finaldecisions', 'auctions')
 
         # Define the two-week window for stopBuyDate
         today = date.today()
@@ -151,13 +151,10 @@ class CaseListView(LoginRequiredMixin, ListView):
         # Then other cases sorted by updated DESC
 
         if sort_by == 'stopBuyDate':
-            # If sorting by stopBuyDate is explicitly requested
-            if order == 'asc':
-                ordering_criteria.append(F('is_future_two_weeks_stop_buy').desc()) # True first
-                ordering_criteria.append(F('latest_stop_buy_date').asc(nulls_last=True))
-            else: # Default to desc for stopBuyDate
-                ordering_criteria.append(F('is_future_two_weeks_stop_buy').desc()) # True first
-                ordering_criteria.append(F('latest_stop_buy_date').desc(nulls_last=True))
+            # For stopBuyDate sorting, we'll sort by days in Python instead of database
+            # So we just order by caseNumber as a fallback for consistent ordering
+            # The actual sorting will be done in get_context_data based on calculated days
+            ordering_criteria.append(F('caseNumber').asc())
         elif sort_by == 'caseNumber':
             # If sorting by caseNumber is requested, prioritize stopBuyDate then caseNumber
             ordering_criteria.append(F('is_future_two_weeks_stop_buy').desc()) # True first
@@ -190,8 +187,12 @@ class CaseListView(LoginRequiredMixin, ListView):
         two_weeks_from_now = today + timedelta(weeks=2)
         
         # Pass sorting parameters to context for template to use
-        context['sort_by'] = self.request.GET.get('sort_by', 'stopBuyDate') # Default to stopBuyDate for initial view
-        context['order'] = self.request.GET.get('order', 'desc')
+        sort_by = self.request.GET.get('sort_by', 'stopBuyDate')
+        # Default order to 'asc' (increasing) for stopBuyDate, 'desc' for others
+        default_order = 'asc' if sort_by == 'stopBuyDate' else 'desc'
+        order = self.request.GET.get('order', default_order)
+        context['sort_by'] = sort_by
+        context['order'] = order
         context['search_query'] = self.request.GET.get('q', '')
         # Default status to '在途' if not specified (first visit)
         context['selected_status'] = self.request.GET.get('status', '在途')
@@ -209,14 +210,173 @@ class CaseListView(LoginRequiredMixin, ListView):
         # Add all users for filter dropdown
         context['users'] = CustomUser.objects.all().order_by('username')
 
-        for case in context['cases']:
-            latest_stop_buy_date = getattr(case, 'latest_stop_buy_date', None)
-            if latest_stop_buy_date and today <= latest_stop_buy_date <= two_weeks_from_now:
-                case.display_stop_buy_date = latest_stop_buy_date.strftime("%Y-%m-%d")
-                case.stop_buy_date_style = "future-two-weeks"
+        # If sorting by stopBuyDate, we need to sort all data before pagination
+        if sort_by == 'stopBuyDate':
+            # Get the unpaginated queryset
+            queryset = self.get_queryset()
+            
+            # Convert to list and calculate days for sorting
+            all_cases = list(queryset)
+            for case in all_cases:
+                # Priority 1: Check Result's stopBuyDate
+                latest_stop_buy_date = getattr(case, 'latest_stop_buy_date', None)
+                target_date = None
+                
+                if latest_stop_buy_date:
+                    # Use Result's stopBuyDate if it exists and is in range
+                    days_from_today = (latest_stop_buy_date - today).days
+                    if days_from_today >= 0 and days_from_today <= 15:
+                        target_date = latest_stop_buy_date
+                
+                # Priority 2: If no valid Result stopBuyDate, check final decision auction date
+                if not target_date:
+                    finaldecisions_list = list(case.finaldecisions.all())
+                    final_decision = finaldecisions_list[-1] if finaldecisions_list else None
+                    
+                    auction_date = None
+                    if final_decision and final_decision.finalDecision:
+                        final_decision_value = final_decision.finalDecision
+                        # Check if final decision contains "3拍進場" or "3拍"
+                        if '3拍' in final_decision_value:
+                            # Find the corresponding auction record for 3拍
+                            auction = case.auctions.filter(type='3拍').first()
+                            if auction and auction.auctionDate:
+                                auction_date = auction.auctionDate
+                        # Check if final decision contains "4拍進場" or "4拍"
+                        elif '4拍' in final_decision_value:
+                            # Find the corresponding auction record for 4拍
+                            auction = case.auctions.filter(type='4拍').first()
+                            if auction and auction.auctionDate:
+                                auction_date = auction.auctionDate
+                    
+                    if auction_date:
+                        days_from_today = (auction_date - today).days
+                        if days_from_today >= 0 and days_from_today <= 15:
+                            target_date = auction_date
+                
+                # Calculate days for sorting
+                if target_date:
+                    days_from_today = (target_date - today).days
+                    case.sort_days = days_from_today
+                else:
+                    case.sort_days = 999999
+            
+            # Sort all cases by days
+            if order == 'asc':
+                all_cases.sort(key=lambda x: getattr(x, 'sort_days', 999999))
             else:
-                case.display_stop_buy_date = "—"
-                case.stop_buy_date_style = ""
+                all_cases.sort(key=lambda x: getattr(x, 'sort_days', 999999), reverse=True)
+            
+            # Apply pagination manually
+            from django.core.paginator import Paginator
+            paginator = Paginator(all_cases, context['page_size'])
+            page_number = self.request.GET.get('page', 1)
+            page_obj = paginator.get_page(page_number)
+            
+            # Calculate display values for paginated cases
+            for case in page_obj:
+                # Priority 1: Check Result's stopBuyDate
+                latest_stop_buy_date = getattr(case, 'latest_stop_buy_date', None)
+                target_date = None
+                
+                if latest_stop_buy_date:
+                    # Use Result's stopBuyDate if it exists and is in range
+                    days_from_today = (latest_stop_buy_date - today).days
+                    if days_from_today >= 0 and days_from_today <= 15:
+                        target_date = latest_stop_buy_date
+                
+                # Priority 2: If no valid Result stopBuyDate, check final decision auction date
+                if not target_date:
+                    finaldecisions_list = list(case.finaldecisions.all())
+                    final_decision = finaldecisions_list[-1] if finaldecisions_list else None
+                    
+                    auction_date = None
+                    if final_decision and final_decision.finalDecision:
+                        final_decision_value = final_decision.finalDecision
+                        # Check if final decision contains "3拍進場" or "3拍"
+                        if '3拍' in final_decision_value:
+                            # Find the corresponding auction record for 3拍
+                            auction = case.auctions.filter(type='3拍').first()
+                            if auction and auction.auctionDate:
+                                auction_date = auction.auctionDate
+                        # Check if final decision contains "4拍進場" or "4拍"
+                        elif '4拍' in final_decision_value:
+                            # Find the corresponding auction record for 4拍
+                            auction = case.auctions.filter(type='4拍').first()
+                            if auction and auction.auctionDate:
+                                auction_date = auction.auctionDate
+                    
+                    if auction_date:
+                        days_from_today = (auction_date - today).days
+                        if days_from_today >= 0 and days_from_today <= 15:
+                            target_date = auction_date
+                
+                # Set display based on target_date
+                if target_date:
+                    days_from_today = (target_date - today).days
+                    case.display_stop_buy_date = f"{days_from_today}天"
+                    case.stop_buy_date_style = "text-danger fw-bold"
+                else:
+                    case.display_stop_buy_date = "—"
+                    case.stop_buy_date_style = ""
+            
+            context['cases'] = page_obj
+            context['is_paginated'] = page_obj.has_other_pages()
+            context['page_obj'] = page_obj
+        else:
+            # For other sorting, use default behavior and calculate display
+            cases = context['cases']
+            if hasattr(cases, 'object_list'):
+                cases_list = list(cases.object_list)
+            else:
+                cases_list = list(cases)
+            
+            for case in cases_list:
+                # Priority 1: Check Result's stopBuyDate
+                latest_stop_buy_date = getattr(case, 'latest_stop_buy_date', None)
+                target_date = None
+                
+                if latest_stop_buy_date:
+                    # Use Result's stopBuyDate if it exists and is in range
+                    days_from_today = (latest_stop_buy_date - today).days
+                    if days_from_today >= 0 and days_from_today <= 15:
+                        target_date = latest_stop_buy_date
+                
+                # Priority 2: If no valid Result stopBuyDate, check final decision auction date
+                if not target_date:
+                    finaldecisions_list = list(case.finaldecisions.all())
+                    final_decision = finaldecisions_list[-1] if finaldecisions_list else None
+                    
+                    auction_date = None
+                    if final_decision and final_decision.finalDecision:
+                        final_decision_value = final_decision.finalDecision
+                        # Check if final decision contains "3拍進場" or "3拍"
+                        if '3拍' in final_decision_value:
+                            # Find the corresponding auction record for 3拍
+                            auction = case.auctions.filter(type='3拍').first()
+                            if auction and auction.auctionDate:
+                                auction_date = auction.auctionDate
+                        # Check if final decision contains "4拍進場" or "4拍"
+                        elif '4拍' in final_decision_value:
+                            # Find the corresponding auction record for 4拍
+                            auction = case.auctions.filter(type='4拍').first()
+                            if auction and auction.auctionDate:
+                                auction_date = auction.auctionDate
+                    
+                    if auction_date:
+                        days_from_today = (auction_date - today).days
+                        if days_from_today >= 0 and days_from_today <= 15:
+                            target_date = auction_date
+                
+                # Set display based on target_date
+                if target_date:
+                    days_from_today = (target_date - today).days
+                    case.display_stop_buy_date = f"{days_from_today}天"
+                    case.stop_buy_date_style = "text-danger fw-bold"
+                else:
+                    case.display_stop_buy_date = "—"
+                    case.stop_buy_date_style = ""
+                
         return context
 
 class CaseDetailView(LoginRequiredMixin, DetailView):
@@ -527,46 +687,50 @@ class FinalDecisionCreateView(LoginRequiredMixin, CreateView):
         self.case = get_object_or_404(Cases, pk=kwargs.get('case_pk'))
         return super().dispatch(request, *args, **kwargs)
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['is_create'] = True  # 标记为创建模式
+        return kwargs
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['case'] = self.case
         return context
 
     def form_valid(self, form):
+        from datetime import date
+        
         form.instance.cases = self.case
-        # 根據選擇的人員自動設置工作轄區
-        name = form.cleaned_data.get('name')
-        if name:
+        
+        # 自动设置分类 = "區域負責人"
+        form.instance.type = "區域負責人"
+        
+        # 自动设置人員 = 案件建立人員（当前登录用户）
+        if self.request.user.is_authenticated:
+            # 使用用户的nickname（如果有）或username
+            if hasattr(self.request.user, 'profile') and self.request.user.profile.nickname:
+                form.instance.name = self.request.user.profile.nickname
+            else:
+                form.instance.name = self.request.user.username
+            
+            # 根據當前用戶自動設置工作轄區
             try:
-                # 優先根據nickname查找，如果找不到再根據username查找
-                user = CustomUser.objects.filter(
-                    profile__nickname=name,
-                    is_active=True,
-                    is_staff=True
-                ).select_related('profile').first()
+                user = self.request.user
+                # 確保profile存在
+                if not hasattr(user, 'profile'):
+                    from users.models import Profile
+                    Profile.objects.get_or_create(user=user)
                 
-                # 如果根據nickname找不到，再根據username查找
-                if not user:
-                    user = CustomUser.objects.filter(
-                        username=name,
-                        is_active=True,
-                        is_staff=True
-                    ).select_related('profile').first()
-                
-                if user:
-                    # 確保profile存在
-                    if not hasattr(user, 'profile'):
-                        from users.models import Profile
-                        Profile.objects.get_or_create(user=user)
-                    
-                    if user.profile and user.profile.work_area:
-                        # 直接存儲 Profile.work_area 的值（key）
-                        form.instance.workArea = user.profile.work_area
-                        print(f"DEBUG: Setting workArea to {form.instance.workArea} for user {user.username}")
+                if user.profile and user.profile.work_area:
+                    # 直接存儲 Profile.work_area 的值（key）
+                    form.instance.workArea = user.profile.work_area
             except Exception as e:
                 import traceback
                 print(f"Error setting workArea: {e}")
                 print(traceback.format_exc())
+        
+        # 自动设置日期 = 创建成功时的日期（当前日期）
+        form.instance.date = date.today()
         
         messages.success(self.request, "最終判定已新增！")
         return super().form_valid(form)
