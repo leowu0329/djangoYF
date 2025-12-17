@@ -150,7 +150,18 @@ class Cases(models.Model):
     debtors_count = self.people.filter(type='債務人').count()
     creditors_count = self.people.filter(type='債權人').count()
     co_owners_count = self.people.filter(type='共有人').count()
-    return f"債務人({debtors_count})/債權人({creditors_count})/共有人({co_owners_count})"
+    parts = []
+    if debtors_count > 0:
+      parts.append(f"  債務人({debtors_count})")
+    if creditors_count > 0:
+      parts.append(f"  債權人({creditors_count})")
+    if co_owners_count > 0:
+      parts.append(f"  共有人({co_owners_count})")
+    # 返回格式：每行前面都有两个空格缩进，每行之间有空行
+    if not parts:
+      return ""
+    result = "\n\n".join(parts)
+    return result
 
   @property
   def avg_objectbuild_calculate_display(self):
@@ -562,3 +573,10 @@ class OfficialDocuments(models.Model):
 
   def __str__(self):
     return f"{self.cases.caseNumber} - {self.type or ''}"
+
+
+class Peterpen(models.Model):
+  name = models.CharField(u'名稱', max_length=100)
+
+  def __str__(self):
+    return self.name or ''

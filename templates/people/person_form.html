@@ -11,8 +11,20 @@
       <form method="post">
         {% csrf_token %}
         <div class="mb-3">
+          <label class="form-label" for="{{ form.type.id_for_label }}">{{ form.type.label }}</label>
+          {{ form.type }}
+          {% for error in form.type.errors %}
+            <div class="alert alert-danger mt-1">{{ error }}</div>
+          {% endfor %}
+        </div>
+        <div class="mb-3">
           <label class="form-label" for="{{ form.user_select.id_for_label }}">{{ form.user_select.label }}</label>
-          {{ form.user_select }}
+          <div class="input-group">
+            {{ form.user_select }}
+            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addPeterpenModal" id="addPeterpenBtn" style="display: none;">
+              <i class="bi bi-plus-circle"></i> 新增小飛俠
+            </button>
+          </div>
           {% if form.user_select.help_text %}
             <small class="form-text text-muted">{{ form.user_select.help_text }}</small>
           {% endif %}
@@ -28,20 +40,13 @@
           {% endfor %}
         </div>
         <div class="mb-3">
-          <label class="form-label" for="{{ form.type.id_for_label }}">{{ form.type.label }}</label>
-          {{ form.type }}
-          {% for error in form.type.errors %}
-            <div class="alert alert-danger mt-1">{{ error }}</div>
-          {% endfor %}
-        </div>
-        <div class="mb-3">
           <label class="form-label" for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
           {{ form.phone }}
           {% for error in form.phone.errors %}
             <div class="alert alert-danger mt-1">{{ error }}</div>
           {% endfor %}
         </div>
-        <div class="row mb-3">
+        <div class="row mb-3" id="holdingShareRow">
           <div class="col-md-6">
             <label class="form-label" for="{{ form.holdingShareNumerator.id_for_label }}">{{ form.holdingShareNumerator.label }}</label>
             {{ form.holdingShareNumerator }}
@@ -57,7 +62,7 @@
             {% endfor %}
           </div>
         </div>
-        <div class="row mb-3">
+        <div class="row mb-3" id="investmentRow">
           <div class="col-md-6">
             <label class="form-label" for="{{ form.investmentNumerator.id_for_label }}">{{ form.investmentNumerator.label }}</label>
             {{ form.investmentNumerator }}
@@ -89,10 +94,223 @@
   </div>
 </div>
 
+<!-- Add Peterpen Modal -->
+<div class="modal fade" id="addPeterpenModal" tabindex="-1" aria-labelledby="addPeterpenModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addPeterpenModalLabel">新增小飛俠</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="peterpenForm">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="peterpenName" class="form-label">名稱</label>
+            <input type="text" class="form-control" id="peterpenName" name="name" required>
+            <div id="peterpenError" class="alert alert-danger mt-2" style="display: none;"></div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" id="savePeterpenBtn">儲存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const userSelect = document.getElementById('id_user_select');
   const nameInput = document.getElementById('id_name');
+  const typeSelect = document.getElementById('id_type');
+  const addPeterpenBtn = document.getElementById('addPeterpenBtn');
+  const savePeterpenBtn = document.getElementById('savePeterpenBtn');
+  const peterpenNameInput = document.getElementById('peterpenName');
+  const peterpenError = document.getElementById('peterpenError');
+  const addPeterpenModal = new bootstrap.Modal(document.getElementById('addPeterpenModal'));
+  
+  // Check if this is edit mode (name field has a value)
+  const isEditMode = nameInput && nameInput.value && nameInput.value.trim() !== '';
+  const initialNameValue = isEditMode ? nameInput.value : null;
+  
+  // Load user select options based on type
+  function loadUserSelectOptions(preserveCurrentSelection = false) {
+    if (!typeSelect || !userSelect) return;
+    
+    const selectedType = typeSelect.value;
+    // Save current selection if needed
+    const currentUserSelectValue = preserveCurrentSelection ? userSelect.value : null;
+    const currentNameValue = preserveCurrentSelection && nameInput ? nameInput.value : null;
+    
+    fetch(`{% url "load_user_select_options" %}?type=${encodeURIComponent(selectedType)}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          console.error('Error loading options:', data.error);
+          return;
+        }
+        
+        // Clear existing options
+        userSelect.innerHTML = '';
+        
+        // Add options based on type
+        if (selectedType === '債務人') {
+          // 債務人：只有自行輸入選項
+          const option = document.createElement('option');
+          option.value = '';
+          option.textContent = '--- 請自行輸入 ---';
+          userSelect.appendChild(option);
+        } else if (selectedType === '小飛俠') {
+          // 小飛俠：所有 Peterpen 的 name
+          const option = document.createElement('option');
+          option.value = '';
+          option.textContent = '--- 請選擇或自行輸入 ---';
+          userSelect.appendChild(option);
+          
+          if (data.options && Array.isArray(data.options)) {
+            data.options.forEach(item => {
+              const opt = document.createElement('option');
+              opt.value = item.value;
+              opt.textContent = item.label;
+              userSelect.appendChild(opt);
+            });
+          }
+        } else if (selectedType === '債權人' || selectedType === '共有人') {
+          // 債權人/共有人：CustomUser(is_staff=True) 對應的 Profile.nickname，也可自行輸入
+          const option = document.createElement('option');
+          option.value = '';
+          option.textContent = '--- 請選擇或自行輸入 ---';
+          userSelect.appendChild(option);
+          
+          if (data.options && Array.isArray(data.options)) {
+            data.options.forEach(item => {
+              const opt = document.createElement('option');
+              opt.value = item.value;
+              opt.textContent = item.label;
+              userSelect.appendChild(opt);
+            });
+          }
+        } else {
+          // 默認：顯示 staff users
+          const option = document.createElement('option');
+          option.value = '';
+          option.textContent = '--- 請選擇或自行輸入 ---';
+          userSelect.appendChild(option);
+          
+          if (data.options && Array.isArray(data.options)) {
+            data.options.forEach(item => {
+              const opt = document.createElement('option');
+              opt.value = item.value;
+              opt.textContent = item.label;
+              userSelect.appendChild(opt);
+            });
+          }
+        }
+        
+        // Restore selection if needed (for edit mode)
+        if (preserveCurrentSelection) {
+          // Try to restore user_select value if it exists in options
+          if (currentUserSelectValue) {
+            // Check if the value exists in the new options
+            let optionExists = false;
+            for (let i = 0; i < userSelect.options.length; i++) {
+              if (userSelect.options[i].value === currentUserSelectValue) {
+                optionExists = true;
+                break;
+              }
+            }
+            if (optionExists) {
+              userSelect.value = currentUserSelectValue;
+            } else if (currentNameValue) {
+              // If user_select value doesn't exist but name exists, try to match by name
+              for (let i = 0; i < userSelect.options.length; i++) {
+                if (userSelect.options[i].value === currentNameValue) {
+                  userSelect.value = currentNameValue;
+                  optionExists = true;
+                  break;
+                }
+              }
+            }
+          }
+          
+          // Restore name value if it exists
+          if (currentNameValue && nameInput) {
+            nameInput.value = currentNameValue;
+            // Set readOnly based on whether user_select has a value
+            nameInput.readOnly = userSelect.value ? true : false;
+          }
+        } else if (!preserveCurrentSelection && !isEditMode) {
+          // Only clear name input if not in edit mode and not preserving selection
+          if (nameInput) {
+            nameInput.value = '';
+            nameInput.readOnly = false;
+          }
+        } else if (nameInput && isEditMode) {
+          // In edit mode, ensure name is preserved and readOnly is set correctly
+          if (userSelect.value) {
+            nameInput.readOnly = true;
+          } else {
+            nameInput.readOnly = false;
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Error loading user select options:', error);
+      });
+  }
+  
+  // Show/hide add Peterpen button based on type selection
+  function toggleAddPeterpenButton() {
+    if (typeSelect && addPeterpenBtn) {
+      if (typeSelect.value === '小飛俠') {
+        addPeterpenBtn.style.display = 'inline-block';
+      } else {
+        addPeterpenBtn.style.display = 'none';
+      }
+    }
+  }
+  
+  // Function to toggle field visibility based on type
+  function toggleFieldsByType() {
+    const holdingShareRow = document.getElementById('holdingShareRow');
+    const investmentRow = document.getElementById('investmentRow');
+    const selectedType = typeSelect ? typeSelect.value : '';
+    
+    // Reset visibility first
+    if (holdingShareRow) holdingShareRow.style.display = '';
+    if (investmentRow) investmentRow.style.display = '';
+    
+    // 債務人: 隐藏全部4个字段
+    if (selectedType === '債務人') {
+      if (holdingShareRow) holdingShareRow.style.display = 'none';
+      if (investmentRow) investmentRow.style.display = 'none';
+    }
+    // 債權人/共有人: 隐藏投資比例2个字段
+    else if (selectedType === '債權人' || selectedType === '共有人') {
+      if (investmentRow) investmentRow.style.display = 'none';
+    }
+    // 小飛俠: 隐藏持分比例2个字段
+    else if (selectedType === '小飛俠') {
+      if (holdingShareRow) holdingShareRow.style.display = 'none';
+    }
+  }
+  
+  // Initial check
+  toggleAddPeterpenButton();
+  toggleFieldsByType();
+  // Preserve current selection when loading initial options (for edit mode)
+  loadUserSelectOptions(true); // Load initial options based on current type, preserve selection
+  
+  // Listen for type changes
+  if (typeSelect) {
+    typeSelect.addEventListener('change', function() {
+      toggleAddPeterpenButton();
+      toggleFieldsByType();
+      loadUserSelectOptions(); // Load options based on selected type
+    });
+  }
   
   if (userSelect && nameInput) {
     // 當選擇了用戶時，自動填入姓名欄位
@@ -111,12 +329,98 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // 如果姓名欄位有值但下拉選單沒有選擇，允許編輯
-    if (nameInput.value && !userSelect.value) {
-      nameInput.readOnly = false;
-    } else if (nameInput.value && userSelect.value) {
-      nameInput.readOnly = true;
+    // 如果姓名欄位有值但下拉選單沒有選擇，允許編輯
+    // 但如果是在編輯模式下初始加載，不要改變現有狀態
+    if (!isEditMode) {
+      if (nameInput.value && !userSelect.value) {
+        nameInput.readOnly = false;
+      } else if (nameInput.value && userSelect.value) {
+        nameInput.readOnly = true;
+      }
+    } else {
+      // 編輯模式下，根據 userSelect 的當前值來設置 readOnly
+      if (userSelect.value) {
+        nameInput.readOnly = true;
+      } else if (nameInput.value) {
+        nameInput.readOnly = false;
+      }
     }
   }
+  
+  // Handle save Peterpen button click
+  if (savePeterpenBtn) {
+    savePeterpenBtn.addEventListener('click', function() {
+      const name = peterpenNameInput.value.trim();
+      if (!name) {
+        peterpenError.textContent = '請輸入名稱';
+        peterpenError.style.display = 'block';
+        return;
+      }
+      
+      // Hide error
+      peterpenError.style.display = 'none';
+      
+      // Get CSRF token
+      const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+      
+      // Send AJAX request
+      fetch('{% url "create_peterpen" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': csrftoken
+        },
+        body: 'name=' + encodeURIComponent(name)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          peterpenError.textContent = data.error;
+          peterpenError.style.display = 'block';
+        } else {
+          // Only add option if type is "小飛俠"
+          if (typeSelect && typeSelect.value === '小飛俠' && userSelect) {
+            // Check if option already exists
+            let optionExists = false;
+            for (let i = 0; i < userSelect.options.length; i++) {
+              if (userSelect.options[i].value === data.name) {
+                optionExists = true;
+                break;
+              }
+            }
+            
+            if (!optionExists) {
+              const option = document.createElement('option');
+              option.value = data.name;
+              option.textContent = data.name;
+              userSelect.appendChild(option);
+            }
+            
+            // Select the new option
+            userSelect.value = data.name;
+            
+            // Trigger change event to update name input
+            userSelect.dispatchEvent(new Event('change'));
+          }
+          
+          // Close modal and reset form
+          addPeterpenModal.hide();
+          peterpenNameInput.value = '';
+          peterpenError.style.display = 'none';
+        }
+      })
+      .catch(error => {
+        peterpenError.textContent = '發生錯誤：' + error.message;
+        peterpenError.style.display = 'block';
+      });
+    });
+  }
+  
+  // Reset modal when it's closed
+  document.getElementById('addPeterpenModal').addEventListener('hidden.bs.modal', function() {
+    peterpenNameInput.value = '';
+    peterpenError.style.display = 'none';
+  });
 });
 </script>
 {% endblock %}

@@ -1,6 +1,6 @@
 from django import forms
 from django.db.models import Q
-from .models import Cases, Land, Build, Person, Survey, FinalDecision, Result, ObjectBuild, Bouns, Auction, City, Township, OfficialDocuments
+from .models import Cases, Land, Build, Person, Survey, FinalDecision, Result, ObjectBuild, Bouns, Auction, City, Township, OfficialDocuments, Peterpen
 from users.models import CustomUser
 
 COMPANY_CHOICES = [
@@ -55,6 +55,7 @@ PERSON_TYPE_CHOICES = [
 	("債務人", "債務人"),
 	("債權人", "債權人"),
 	("共有人", "共有人"),
+	("小飛俠", "小飛俠"),
 ]
 
 FINAL_TYPE_CHOICES = [
@@ -213,12 +214,47 @@ class PersonForm(forms.ModelForm):
 
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
-		# 獲取所有 is_staff=True 的用戶
-		staff_users = CustomUser.objects.filter(is_staff=True).select_related('profile')
-		choices = [("", "--- 請選擇或自行輸入 ---")]
-		for user in staff_users:
-			display_name = user.profile.nickname if hasattr(user, 'profile') and user.profile.nickname else user.username
-			choices.append((display_name, display_name))
+		
+		# 檢查當前類型
+		instance = getattr(self, 'instance', None) or kwargs.get('instance')
+		current_type = None
+		if instance and hasattr(instance, 'pk') and instance.pk:
+			# 編輯模式，使用實例的類型
+			current_type = instance.type
+		elif hasattr(self, 'data') and self.data and 'type' in self.data:
+			# 表單已提交，使用提交的數據
+			current_type = self.data['type']
+		elif hasattr(self, 'initial') and self.initial and 'type' in self.initial:
+			# 使用初始值
+			current_type = self.initial['type']
+		
+		# 根據類型設置選項
+		choices = []
+		
+		if current_type == '債務人':
+			# 債務人：只有自行輸入選項
+			choices = [("", "--- 請自行輸入 ---")]
+		elif current_type == '小飛俠':
+			# 小飛俠：所有 Peterpen 的 name
+			choices = [("", "--- 請選擇或自行輸入 ---")]
+			peterpens = Peterpen.objects.all().order_by('name')
+			for peterpen in peterpens:
+				choices.append((peterpen.name, peterpen.name))
+		elif current_type in ['債權人', '共有人']:
+			# 債權人/共有人：CustomUser(is_staff=True) 對應的 Profile.nickname，也可自行輸入
+			choices = [("", "--- 請選擇或自行輸入 ---")]
+			staff_users = CustomUser.objects.filter(is_staff=True).select_related('profile')
+			for user in staff_users:
+				display_name = user.profile.nickname if hasattr(user, 'profile') and user.profile.nickname else user.username
+				choices.append((display_name, display_name))
+		else:
+			# 默認情況：顯示 staff users（用於編輯模式或初始狀態）
+			choices = [("", "--- 請選擇或自行輸入 ---")]
+			staff_users = CustomUser.objects.filter(is_staff=True).select_related('profile')
+			for user in staff_users:
+				display_name = user.profile.nickname if hasattr(user, 'profile') and user.profile.nickname else user.username
+				choices.append((display_name, display_name))
+		
 		self.fields['user_select'].choices = choices
 
 	class Meta:

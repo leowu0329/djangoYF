@@ -7,7 +7,7 @@ from datetime import date, timedelta
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
 from django.views.decorators.clickjacking import xframe_options_exempt
-from .models import Cases, Land, Build, Person, Survey, FinalDecision, Result, ObjectBuild, Bouns, Auction, City, Township, OfficialDocuments
+from .models import Cases, Land, Build, Person, Survey, FinalDecision, Result, ObjectBuild, Bouns, Auction, City, Township, OfficialDocuments, Peterpen
 from users.models import CustomUser # Import CustomUser model
 from .forms import CasesForm, LandForm, BuildForm, PersonForm, SurveyForm, FinalDecisionForm, ResultForm, ObjectBuildForm, BounsForm, AuctionForm, OfficialDocumentForm
 from django.http import JsonResponse, HttpResponse
@@ -55,6 +55,69 @@ def get_city_for_township(request):
         return JsonResponse({'error': f'載入城市資料時發生錯誤: {str(e)}'}, status=500)
     city = t.city
     return JsonResponse({'id': city.id, 'name': city.name})
+
+@require_GET
+def load_peterpens(request):
+    """Get all Peterpen records"""
+    try:
+        peterpens = Peterpen.objects.all().order_by('name').values('id', 'name')
+        return JsonResponse(list(peterpens), safe=False)
+    except Exception as e:
+        return JsonResponse({'error': f'載入小飛俠資料時發生錯誤: {str(e)}'}, status=500)
+
+@require_GET
+def load_user_select_options(request):
+    """Get user select options based on person type"""
+    person_type = request.GET.get('type', '')
+    
+    try:
+        options = []
+        
+        if person_type == '小飛俠':
+            # 所有 Peterpen 的 name
+            peterpens = Peterpen.objects.all().order_by('name')
+            for peterpen in peterpens:
+                options.append({'value': peterpen.name, 'label': peterpen.name})
+        elif person_type in ['債權人', '共有人']:
+            # CustomUser(is_staff=True) 对应的 Profile.nickname
+            staff_users = CustomUser.objects.filter(is_staff=True).select_related('profile')
+            for user in staff_users:
+                display_name = user.profile.nickname if hasattr(user, 'profile') and user.profile.nickname else user.username
+                options.append({'value': display_name, 'label': display_name})
+            # 保留自行输入的选项（空选项已经在模板中处理）
+        elif person_type == '債務人':
+            # 只有自行输入选项（空选项）
+            pass  # 不添加任何选项，只保留空选项
+        else:
+            # 默认情况：显示 staff users
+            staff_users = CustomUser.objects.filter(is_staff=True).select_related('profile')
+            for user in staff_users:
+                display_name = user.profile.nickname if hasattr(user, 'profile') and user.profile.nickname else user.username
+                options.append({'value': display_name, 'label': display_name})
+        
+        return JsonResponse({'options': options}, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': f'載入選項時發生錯誤: {str(e)}'}, status=500)
+
+@login_required
+def create_peterpen(request):
+    """Create a new Peterpen"""
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        if not name:
+            return JsonResponse({'error': '名稱不能為空'}, status=400)
+        
+        try:
+            # Check if name already exists
+            if Peterpen.objects.filter(name=name).exists():
+                return JsonResponse({'error': '此名稱已存在'}, status=400)
+            
+            peterpen = Peterpen.objects.create(name=name)
+            return JsonResponse({'id': peterpen.id, 'name': peterpen.name})
+        except Exception as e:
+            return JsonResponse({'error': f'創建小飛俠時發生錯誤: {str(e)}'}, status=500)
+    
+    return JsonResponse({'error': '僅支援 POST 請求'}, status=405)
 
 class CaseListView(LoginRequiredMixin, ListView):
     model = Cases
@@ -492,8 +555,11 @@ class LandUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     template_name = 'lands/land_form.html'
 
     def test_func(self):
-        """只有該案件的負責人可以編輯"""
+        """管理員或該案件的負責人可以編輯"""
         land = self.get_object()
+        # 檢查是否為管理員
+        if self.request.user.is_staff:
+            return True
         # 檢查是否為該案件的負責人
         if land.cases.user and self.request.user == land.cases.user:
             return True
@@ -511,8 +577,11 @@ class LandDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     template_name = 'lands/land_confirm_delete.html'
 
     def test_func(self):
-        """只有該案件的負責人可以刪除"""
+        """管理員或該案件的負責人可以刪除"""
         land = self.get_object()
+        # 檢查是否為管理員
+        if self.request.user.is_staff:
+            return True
         # 檢查是否為該案件的負責人
         if land.cases.user and self.request.user == land.cases.user:
             return True

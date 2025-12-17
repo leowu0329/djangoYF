@@ -1,12 +1,105 @@
 {% extends 'base.html' %}
+{% load widget_tweaks %}
 
 {% block content %}
-  <h2>{% if form.instance.pk %}Edit{% else %}Create{% endif %} Official Document</h2>
-  <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <input type="hidden" name="case_pk" value="{{ case.pk }}">
-    <button type="submit">Save</button>
-  </form>
-  <a href="{% url 'case_detail' case.pk %}">Back to Case Detail</a>
+<div class="container mt-4">
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+      <h1 class="card-title mb-0">
+        <i class="bi bi-file-text me-2"></i>
+        {% if form.instance.pk %}編輯公文{% else %}新增公文{% endif %}
+      </h1>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        
+        <!-- 隱藏字段 -->
+        {{ form.cases }}
+        
+        <!-- 第一行：案別 + 股別 -->
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="{{ form.type.id_for_label }}" class="form-label">
+              <i class="bi bi-tag me-1"></i>{{ form.type.label }}
+            </label>
+            {{ form.type|add_class:"form-select" }}
+            {% if form.type.help_text %}
+              <div class="form-text">{{ form.type.help_text }}</div>
+            {% endif %}
+            {% for error in form.type.errors %}
+              <div class="alert alert-danger mt-1 mb-0">{{ error }}</div>
+            {% endfor %}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="{{ form.stock.id_for_label }}" class="form-label">
+              <i class="bi bi-diagram-3 me-1"></i>{{ form.stock.label }}
+            </label>
+            {{ form.stock|add_class:"form-select" }}
+            {% if form.stock.help_text %}
+              <div class="form-text">{{ form.stock.help_text }}</div>
+            {% endif %}
+            {% for error in form.stock.errors %}
+              <div class="alert alert-danger mt-1 mb-0">{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- 第二行：案號 -->
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <label for="{{ form.docNumber.id_for_label }}" class="form-label">
+              <i class="bi bi-hash me-1"></i>{{ form.docNumber.label }}
+            </label>
+            {{ form.docNumber|add_class:"form-control" }}
+            {% if form.docNumber.help_text %}
+              <div class="form-text">{{ form.docNumber.help_text }}</div>
+            {% endif %}
+            {% for error in form.docNumber.errors %}
+              <div class="alert alert-danger mt-1 mb-0">{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- 第三行：電話 + 分機 -->
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="{{ form.tel.id_for_label }}" class="form-label">
+              <i class="bi bi-telephone me-1"></i>{{ form.tel.label }}
+            </label>
+            {{ form.tel|add_class:"form-control" }}
+            {% if form.tel.help_text %}
+              <div class="form-text">{{ form.tel.help_text }}</div>
+            {% endif %}
+            {% for error in form.tel.errors %}
+              <div class="alert alert-danger mt-1 mb-0">{{ error }}</div>
+            {% endfor %}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="{{ form.ext.id_for_label }}" class="form-label">
+              <i class="bi bi-telephone-forward me-1"></i>{{ form.ext.label }}
+            </label>
+            {{ form.ext|add_class:"form-control" }}
+            {% if form.ext.help_text %}
+              <div class="form-text">{{ form.ext.help_text }}</div>
+            {% endif %}
+            {% for error in form.ext.errors %}
+              <div class="alert alert-danger mt-1 mb-0">{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- 按鈕區域 -->
+        <div class="d-flex justify-content-end mt-4 pt-3 border-top">
+          <button type="submit" class="btn btn-primary me-2">
+            <i class="bi bi-save me-1"></i>儲存
+          </button>
+          <a href="{% url 'case_detail' case.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left-circle me-1"></i>返回案件詳情
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 {% endblock %}

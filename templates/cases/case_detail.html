@@ -1,808 +1,1048 @@
 {% extends 'base.html' %}
-
 {% block content %}
-<div class="container mt-4">
-  <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <h1 class="card-title mb-0">{{ case.caseNumber }}</h1>
-      <a href="{% url 'case_list' %}" class="btn btn-secondary">
-        <i class="bi bi-arrow-left-circle"></i> 返回案件列表
-      </a>
-    </div>
-    <div class="card-body">
-      <!-- Tabs -->
-      <ul class="nav nav-tabs" id="caseTab" role="tablist">
-        <li class="nav-item" role="presentation">
-          <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="true">
-            <i class="bi bi-info-circle"></i> 詳情
-          </button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="lands-tab" data-bs-toggle="tab" data-bs-target="#lands" type="button" role="tab" aria-controls="lands" aria-selected="false">
-            <i class="bi bi-map"></i> 土地資訊({{ case.total_calculated_land_area_display }})
-          </button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="builds-tab" data-bs-toggle="tab" data-bs-target="#builds" type="button" role="tab" aria-controls="builds" aria-selected="false">
-            <i class="bi bi-building"></i> 建物資訊({{ case.total_calculated_build_area_display }})
-          </button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="people-tab" data-bs-toggle="tab" data-bs-target="#people" type="button" role="tab" aria-controls="people" aria-selected="false">
-            <i class="bi bi-people"></i> 人員資訊：{{ case.people_summary_display }}
-          </button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="surveys-tab" data-bs-toggle="tab" data-bs-target="#surveys" type="button" role="tab" aria-controls="surveys" aria-selected="false">
-            <i class="bi bi-clipboard-data"></i> 勘查 {{ case.survey_links_count_display }}
-          </button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="finaldecisions-tab" data-bs-toggle="tab" data-bs-target="#finaldecisions" type="button" role="tab" aria-controls="finaldecisions" aria-selected="false">
-            <i class="bi bi-check2-square"></i> 最終判定({% with latest_finaldecision=case.finaldecisions.last %}
-              {% if latest_finaldecision and latest_finaldecision.finalDecision %}
-                {{ latest_finaldecision.finalDecision }}
-              {% else %}
-                無記錄
-              {% endif %}
-            {% endwith %})
-          </button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="results-tab" data-bs-toggle="tab" data-bs-target="#results" type="button" role="tab" aria-controls="results" aria-selected="false">
-            <i class="bi bi-clipboard-check"></i> 結果({{ case.result_action_result_display }})
-          </button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="objectbuilds-tab" data-bs-toggle="tab" data-bs-target="#objectbuilds" type="button" role="tab" aria-controls="objectbuilds" aria-selected="false">
-            <i class="bi bi-house"></i> 比價建物({{ case.avg_objectbuild_calculate_display }})
-          </button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="auctions-tab" data-bs-toggle="tab" data-bs-target="#auctions" type="button" role="tab" aria-controls="auctions" aria-selected="false">
-            <i class="bi bi-gavel"></i> 拍賣({% with latest_auction=case.auctions.last %}
-              {% if latest_auction %}
-                {% if case.objectbuilds.exists %}
-                  CP: {{ latest_auction.calculated_cp_value }}
-                  {% if latest_auction.type == '1拍' and latest_auction.calculated_cp_value > 0.92 or latest_auction.type == '2拍' and latest_auction.calculated_cp_value > 1.15 or latest_auction.type == '3拍' and latest_auction.calculated_cp_value > 1.44 or latest_auction.type == '4拍' and latest_auction.calculated_cp_value > 1.80 %}
-                    [建議進場]
+  <div class="container-fluid px-3">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h1 class="card-title mb-0">{{ case.caseNumber }}</h1>
+        <a href="{% url 'case_list' %}" class="btn btn-secondary">
+          <i class="bi bi-arrow-left-circle"></i> 返回案件列表
+        </a>
+      </div>
+      <div class="card-body">
+        <!-- Sidebar Layout -->
+        <div class="d-flex">
+          <!-- Left Sidebar Navigation -->
+          <div class="nav flex-column nav-pills me-3 bg-body-secondary"
+               id="caseTab"
+               role="tablist"
+               style="min-width: 220px">
+            <button class="nav-link active text-start "
+                    id="details-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#details"
+                    type="button"
+                    role="tab"
+                    aria-controls="details"
+                    aria-selected="true">
+              <i class="bi bi-info-circle"></i> 詳情
+            </button>
+            <button class="nav-link text-start"
+                    id="lands-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#lands"
+                    type="button"
+                    role="tab"
+                    aria-controls="lands"
+                    aria-selected="false">
+              <i class="bi bi-map"></i> 土地資訊({{ case.total_calculated_land_area_display }})
+            </button>
+            <button class="nav-link text-start"
+                    id="builds-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#builds"
+                    type="button"
+                    role="tab"
+                    aria-controls="builds"
+                    aria-selected="false">
+              <i class="bi bi-building"></i> 建物資訊({{ case.total_calculated_build_area_display }})
+            </button>
+            <button class="nav-link text-start"
+                    id="people-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#people"
+                    type="button"
+                    role="tab"
+                    aria-controls="people"
+                    aria-selected="false"
+                    style="font-family: monospace">
+              <i class="bi bi-people"></i> 人員資訊：
+              <div>{{ case.people_summary_display }}</div>
+            </button>
+            <button class="nav-link text-start"
+                    id="surveys-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#surveys"
+                    type="button"
+                    role="tab"
+                    aria-controls="surveys"
+                    aria-selected="false">
+              <i class="bi bi-clipboard-data"></i> 勘查 {{ case.survey_links_count_display }}
+            </button>
+            <button class="nav-link text-start"
+                    id="finaldecisions-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#finaldecisions"
+                    type="button"
+                    role="tab"
+                    aria-controls="finaldecisions"
+                    aria-selected="false">
+              <i class="bi bi-check2-square"></i>
+              最終判定(
+              {% with latest_finaldecision=case.finaldecisions.last %}
+                {% if latest_finaldecision and latest_finaldecision.finalDecision %}
+                  {{ latest_finaldecision.finalDecision }}
+                {% else %}
+                  無記錄
+                {% endif %}
+              {% endwith %}
+              )
+            </button>
+            <button class="nav-link text-start"
+                    id="results-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#results"
+                    type="button"
+                    role="tab"
+                    aria-controls="results"
+                    aria-selected="false">
+              <i class="bi bi-clipboard-check"></i> 結果({{ case.result_action_result_display }})
+            </button>
+            <button class="nav-link text-start"
+                    id="objectbuilds-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#objectbuilds"
+                    type="button"
+                    role="tab"
+                    aria-controls="objectbuilds"
+                    aria-selected="false">
+              <i class="bi bi-house"></i> 比價建物({{ case.avg_objectbuild_calculate_display }})
+            </button>
+            <button class="nav-link text-start"
+                    id="auctions-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#auctions"
+                    type="button"
+                    role="tab"
+                    aria-controls="auctions"
+                    aria-selected="false">
+              <i class="bi bi-hammer me-1"></i>拍賣(
+              {% with latest_auction=case.auctions.last %}
+                {% if latest_auction %}
+                  {% if case.objectbuilds.exists %}
+                    CP: {{ latest_auction.calculated_cp_value }}
+                    {% if latest_auction.type == '1拍' and latest_auction.calculated_cp_value > 0.92 or latest_auction.type == '2拍' and latest_auction.calculated_cp_value > 1.15 or latest_auction.type == '3拍' and latest_auction.calculated_cp_value > 1.44 or latest_auction.type == '4拍' and latest_auction.calculated_cp_value > 1.80 %}
+                      [建議進場]
+                    {% else %}
+                      [不可進場]
+                    {% endif %}
                   {% else %}
-                    [不可進場]
+                    無時價記錄
                   {% endif %}
                 {% else %}
-                  無時價記錄
+                  無記錄
                 {% endif %}
+              {% endwith %}
+              )
+            </button>
+            <button class="nav-link text-start"
+                    id="officialdocuments-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#officialdocuments"
+                    type="button"
+                    role="tab"
+                    aria-controls="officialdocuments"
+                    aria-selected="false">
+              <i class="bi bi-file-text"></i> 公文 (
+              {% if case.officialdocuments.count > 0 %}
+                {{ case.officialdocuments.count }}
               {% else %}
-                無記錄
+                0
               {% endif %}
-            {% endwith %})
-          </button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="officialdocuments-tab" data-bs-toggle="tab" data-bs-target="#officialdocuments" type="button" role="tab" aria-controls="officialdocuments" aria-selected="false">
-            <i class="bi bi-file-text"></i> 公文 ({% if case.officialdocuments.count > 0 %}{{ case.officialdocuments.count }}{% else %}0{% endif %})
-          </button>
-        </li>
-      </ul>
-
-      <div class="tab-content pt-3" id="caseTabContent">
-        <!-- Details Tab -->
-        <div class="tab-pane fade show active" id="details" role="tabpanel" aria-labelledby="details-tab">
-          <div class="table-responsive">
-            <table class="table table-sm table-hover align-middle">
-              <thead class="table-light">
-                <tr>
-                  <th class="text-center align-middle">狀態</th>
-                  <th class="text-center align-middle">案號</th>
-                  <th class="text-center align-middle">地址</th>
-                  <th class="text-center align-middle">公司</th>
-                  <th class="text-center align-middle">負責人</th>
-                  <th class="text-center align-middle">操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>
-                    {% if case.status == "在途" %}
-                      <span class="badge rounded-pill bg-warning text-dark fs-6">{{ case.status }}</span>
-                    {% elif case.status == "結案" %}
-                      <span class="badge rounded-pill bg-success fs-6">{{ case.status }}</span>
-                    {% else %}
-                      <span class="badge rounded-pill bg-secondary fs-6">{{ case.status }}</span>
-                    {% endif %}
-                  </td>
-                  <td>{{ case.caseNumber }}</td>
-                  <td>{{ case.fullAddress|default:"—" }}</td>
-                  <td>{{ case.company|default:"—" }}</td>
-                  <td>{{ case.user.profile.nickname|default:case.user.username }}</td>
-                  <td class="text-end">
-                    {% if user.profile.role == 'admin' or user == case.user %}
-                    <a href="{% url 'case_update' case.id %}" class="btn btn-sm btn-outline-primary">
-                      <i class="bi bi-pencil"></i>
-                    </a>
-                    <a href="{% url 'case_delete' case.id %}" class="btn btn-sm btn-outline-danger">
-                      <i class="bi bi-trash"></i>
-                    </a>
-                    {% endif %}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+              )
+            </button>
           </div>
-        </div>
-
-        <!-- Lands Tab -->
-        <div class="tab-pane fade" id="lands" role="tabpanel" aria-labelledby="lands-tab">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">土地</h5>
-            {% if user.profile.role == 'admin' or user == case.user %}
-            <a href="{% url 'land_create' case_pk=case.id %}" class="btn btn-sm btn-success">
-              <i class="bi bi-plus-circle"></i> 新增土地
-            </a>
-            {% endif %}
-          </div>
-          {% if case.lands.all %}
-            <div class="table-responsive">
-              <table class="table table-sm table-hover align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th class="text-center align-middle">地號</th>
-                    <th class="text-center align-middle">地坪(平方公尺)</th>
-                    <th class="text-center align-middle">個人持分</th>
-                    <th class="text-center align-middle">所有持分</th>
-                    <th class="text-center align-middle">計算後地坪(坪)</th>
-                    <th class="text-center align-middle">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for land in case.lands.all %}
+          <!-- Content Area -->
+          <div class="tab-content flex-grow-1" id="caseTabContent">
+            <!-- Details Tab -->
+            <div class="tab-pane fade show active"
+                 id="details"
+                 role="tabpanel"
+                 aria-labelledby="details-tab">
+              <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle">
+                  <thead class="table-light">
                     <tr>
-                      <td>
-                        {% if land.url %}
-                          <a href="{{ land.url }}" target="_blank" class="text-decoration-none">{{ land.formatted_landNumber }}</a>
+                      <th class="text-center align-middle">狀態</th>
+                      <th class="text-center align-middle">案號</th>
+                      <th class="text-center align-middle">地址</th>
+                      <th class="text-center align-middle">公司</th>
+                      <th class="text-center align-middle">負責人</th>
+                      <th class="text-center align-middle">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="text-center align-middle">
+                        {% if case.status == "在途" %}
+                          <span class="badge rounded-pill bg-warning text-dark fs-6">{{ case.status }}</span>
+                        {% elif case.status == "結案" %}
+                          <span class="badge rounded-pill bg-success fs-6">{{ case.status }}</span>
                         {% else %}
-                          {{ land.formatted_landNumber }}
+                          <span class="badge rounded-pill bg-secondary fs-6">{{ case.status }}</span>
                         {% endif %}
                       </td>
-                      <td>{{ land.area }}</td>
-                      <td>{{ land.holdingPointPersonal }}</td>
-                      <td>{{ land.holdingPointAll }}</td>
-                      <td>{{ land.calculatedArea }}</td>
-                      <td class="text-end">
-                        {% if user == case.user %}
-                        <a href="{% url 'land_update' land.id %}" class="btn btn-sm btn-outline-primary">
-                          <i class="bi bi-pencil"></i>
-                        </a>
-                        <a href="{% url 'land_delete' land.id %}" class="btn btn-sm btn-outline-danger">
-                          <i class="bi bi-trash"></i>
-                        </a>
-                        {% endif %}
-                      </td>
-                    </tr>
-                  {% empty %}
-                    <tr><td colspan="6" class="text-center text-muted">無土地記錄。</td></tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          {% else %}
-            <div class="alert alert-info">無土地記錄。</div>
-          {% endif %}
-        </div>
-
-        <!-- Builds Tab -->
-        <div class="tab-pane fade" id="builds" role="tabpanel" aria-labelledby="builds-tab">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">建物</h5>
-            {% if user.profile.role == 'admin' or user == case.user %}
-            <a href="{% url 'build_create' case_pk=case.id %}" class="btn btn-sm btn-success">
-              <i class="bi bi-plus-circle"></i> 新增建物
-            </a>
-            {% endif %}
-          </div>
-          {% if case.builds.all %}
-            <div class="table-responsive">
-              <table class="table table-sm table-hover align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th class="text-center align-middle">建號</th>
-                    <th class="text-center align-middle">建坪(平方公尺)</th>
-                    <th class="text-center align-middle">個人持分</th>
-                    <th class="text-center align-middle">所有持分</th>
-                    <th class="text-center align-middle">計算後建坪</th>
-                    <th class="text-center align-middle">建物型</th>
-                    <th class="text-center align-middle">使用分區</th>
-                    <th class="text-center align-middle">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for build in case.builds.all %}
-                    <tr>
-                      <td>
-                        {% if build.url %}
-                          <a href="{{ build.url }}" target="_blank" class="text-decoration-none">{{ build.formatted_buildNumber }}</a>
-                        {% else %}
-                          {{ build.formatted_buildNumber }}
-                        {% endif %}
-                      </td>
-                      <td>{{ build.area }}</td>
-                      <td>{{ build.holdingPointPersonal }}</td>
-                      <td>{{ build.holdingPointAll }}</td>
-                      <td>{{ build.calculatedArea }}</td>
-                      <td>{{ build.typeUse }}</td>
-                      <td>{{ build.usePartition }}</td>
-                      <td class="text-end">
+                      <td>{{ case.caseNumber }}</td>
+                      <td>{{ case.fullAddress|default:"—" }}</td>
+                      <td class="text-center align-middle">{{ case.company|default:"—" }}</td>
+                      <td class="text-center align-middle">{{ case.user.profile.nickname|default:case.user.username }}</td>
+                      <td class="text-center align-middle">
                         {% if user.profile.role == 'admin' or user == case.user %}
-                        <a href="{% url 'build_update' build.id %}" class="btn btn-sm btn-outline-primary">
-                          <i class="bi bi-pencil"></i>
-                        </a>
-                        <a href="{% url 'build_delete' build.id %}" class="btn btn-sm btn-outline-danger">
-                          <i class="bi bi-trash"></i>
-                        </a>
+                          <a href="{% url 'case_update' case.id %}"
+                             class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-pencil"></i>
+                          </a>
+                          <a href="{% url 'case_delete' case.id %}"
+                             class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash"></i>
+                          </a>
                         {% endif %}
                       </td>
                     </tr>
-                  {% empty %}
-                    <tr><td colspan="8" class="text-center text-muted">無建物記錄。</td></tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          {% else %}
-            <div class="alert alert-info">無建物記錄。</div>
-          {% endif %}
-        </div>
-
-        <!-- People Tab -->
-        <div class="tab-pane fade" id="people" role="tabpanel" aria-labelledby="people-tab">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">人員</h5>
-            {% if user.profile.role == 'admin' or user == case.user %}
-            <a href="{% url 'person_create' case_pk=case.id %}" class="btn btn-sm btn-success">
-              <i class="bi bi-plus-circle"></i> 新增人員
-            </a>
-            {% endif %}
-          </div>
-          {% if case.people.all %}
-            <div class="table-responsive">
-              <table class="table table-sm table-hover align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th class="text-center align-middle">姓名</th>
-                    <th class="text-center align-middle">分類</th>
-                    <th class="text-center align-middle">電話</th>
-                    <th class="text-center align-middle">持分比例</th>
-                    <th class="text-center align-middle">投資比例</th>
-                    <th class="text-center align-middle">備註</th>
-                    <th class="text-center align-middle">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for person in case.people.all %}
-                    <tr>
-                      <td>{{ person.name }}</td>
-                      <td>{{ person.type }}</td>
-                      <td>{{ person.phone|default:"" }}</td>
-                      <td>
-                        {% if person.holdingShareNumerator and person.holdingShareDenominator %}
-                          {{ person.holdingShareNumerator }}/{{ person.holdingShareDenominator }}
-                        {% else %}
-                          —
-                        {% endif %}
-                      </td>
-                      <td>
-                        {% if person.investmentNumerator and person.investmentDenominator %}
-                          {{ person.investmentNumerator }}/{{ person.investmentDenominator }}
-                        {% else %}
-                          —
-                        {% endif %}
-                      </td>
-                      <td style="word-wrap: break-word; white-space: pre-wrap; max-width: 300px;">{{ person.remark|default:"" }}</td>
-                      <td class="text-end">
-                        {% if user.profile.role == 'admin' or user == case.user %}
-                        <a href="{% url 'person_update' person.id %}" class="btn btn-sm btn-outline-primary">
-                          <i class="bi bi-pencil"></i>
-                        </a>
-                        <a href="{% url 'person_delete' person.id %}" class="btn btn-sm btn-outline-danger">
-                          <i class="bi bi-trash"></i>
-                        </a>
-                        {% endif %}
-                      </td>
-                    </tr>
-                  {% empty %}
-                    <tr><td colspan="7" class="text-center text-muted">無人員記錄。</td></tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          {% else %}
-            <div class="alert alert-info">無人員記錄。</div>
-          {% endif %}
-        </div>
-
-        <!-- Surveys Tab -->
-        <div class="tab-pane fade" id="surveys" role="tabpanel" aria-labelledby="surveys-tab">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">勘查</h5>
-            {% if user.profile.role == 'admin' or user == case.user %}
-            <a href="{% url 'survey_create' case_pk=case.id %}" class="btn btn-sm btn-success">
-              <i class="bi bi-plus-circle"></i> 新增勘查
-            </a>
-            {% endif %}
-          </div>
-          {% if case.surveys.all %}
-            <div class="table-responsive">
-              <table class="table table-sm table-hover align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th class="text-center align-middle">初勘日</th>
-                    <th class="text-center align-middle">會勘日</th>
-                    <th class="text-center align-middle">法拍公告</th>
-                    <th class="text-center align-middle">998</th>
-                    <th class="text-center align-middle">物件照片</th>
-                    <th class="text-center align-middle">市場行情</th>
-                    <th class="text-center align-middle">法拍記錄</th>
-                    <th class="text-center align-middle">現場勘查</th>
-                    <th class="text-center align-middle">收發文薄</th>
-                    <th class="text-center align-middle">流水帳</th>
-                    <th class="text-center align-middle">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for s in case.surveys.all %}
-                    <tr>
-                      <td>{{ s.firstDay|date:"Y-m-d"|default:"—" }}</td>
-                      <td>{{ s.secondDay|date:"Y-m-d"|default:"—" }}</td>
-                      <td>{% if s.foreclosureAnnouncementLink %}<a href="{{ s.foreclosureAnnouncementLink }}" target="_blank">連結</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
-                      <td>{% if s.house988Link %}<a href="{{ s.house988Link }}" target="_blank">連結</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
-                      <td>{% if s.objectPhotoLink %}<a href="{{ s.objectPhotoLink }}" target="_blank">連結</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
-                      <td>{% if s.netMarketPriceLink %}<a href="{{ s.netMarketPriceLink }}" target="_blank">連結</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
-                      <td>{% if s.foreclosureRecordLink %}<a href="{{ s.foreclosureRecordLink }}" target="_blank">連結</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
-                      <td>{% if s.objectViewLink %}<a href="{{ s.objectViewLink }}" target="_blank">連結</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
-                      <td>{% if s.pagesViewLink %}<a href="{{ s.pagesViewLink }}" target="_blank">連結</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
-                      <td>{% if s.moneytViewLink %}<a href="{{ s.moneytViewLink }}" target="_blank">連結</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
-                      <td class="text-end">
-                        {% if user.profile.role == 'admin' or user == case.user %}
-                        <a href="{% url 'survey_update' s.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
-                        <a href="{% url 'survey_delete' s.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
-                        {% endif %}
-                      </td>
-                    </tr>
-                  {% empty %}
-                    <tr><td colspan="11" class="text-center text-muted">無勘查記錄。</td></tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          {% else %}
-            <div class="alert alert-info">無勘查記錄。</div>
-          {% endif %}
-        </div>
-
-        <!-- Final Decisions Tab -->
-        <div class="tab-pane fade" id="finaldecisions" role="tabpanel" aria-labelledby="finaldecisions-tab">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">最終判定</h5>
-            {% if user.profile.role == 'admin' or user == case.user %}
-            <a href="{% url 'finaldecision_create' case_pk=case.id %}" class="btn btn-sm btn-success">
-              <i class="bi bi-plus-circle"></i> 新增最終判定
-            </a>
-            {% endif %}
-          </div>
-          {% if case.finaldecisions.all %}
-            <div class="table-responsive">
-              <table class="table table-sm table-hover align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th class="text-center align-middle">最終判定</th>
-                    <th class="text-center align-middle">分類</th>
-                    <th class="text-center align-middle">人員</th>
-                    <th class="text-center align-middle">日期</th>
-                    <th class="text-center align-middle">工作轄區</th>
-                    <th class="text-center align-middle">備註</th>
-                    <th class="text-center align-middle">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for fd in case.finaldecisions.all %}
-                    <tr>
-                      <td>{{ fd.finalDecision }}</td>
-                      <td>{{ fd.type }}</td>
-                      <td>{{ fd.name }}</td>
-                      <td>{{ fd.date|date:"Y-m-d"|default:"—" }}</td>
-                      <td>
-                        {% if fd.workArea == 'north' %}
-                          雙北桃竹苗
-                        {% elif fd.workArea == 'central' %}
-                          中彰投
-                        {% elif fd.workArea == 'south' %}
-                          雲嘉南
-                        {% elif fd.workArea == 'kaoping' %}
-                          高高屏
-                        {% else %}
-                          {{ fd.workArea|default:"—" }}
-                        {% endif %}
-                      </td>
-                      <td style="word-wrap: break-word; white-space: pre-wrap; max-width: 500px;">{{ fd.remark }}</td>
-                      <td class="text-end">
-                        {% if user.profile.role == 'admin' or user == case.user %}
-                        <a href="{% url 'finaldecision_update' fd.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
-                        <a href="{% url 'finaldecision_delete' fd.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
-                        {% endif %}
-                      </td>
-                    </tr>
-                  {% empty %}
-                    <tr><td colspan="7" class="text-center text-muted">無最終判定記錄。</td></tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          {% else %}
-            <div class="alert alert-info">無最終判定記錄。</div>
-          {% endif %}
-        </div>
-
-        <!-- Results Tab -->
-        <div class="tab-pane fade" id="results" role="tabpanel" aria-labelledby="results-tab">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">結果</h5>
-            {% if user.profile.role == 'admin' or user == case.user %}
-            <a href="{% url 'result_create' case_pk=case.id %}" class="btn btn-sm btn-success">
-              <i class="bi bi-plus-circle"></i> 新增結果
-            </a>
-            {% endif %}
-          </div>
-          {% if case.results.all %}
-            <div class="table-responsive">
-              <table class="table table-sm table-hover align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th class="text-center align-middle">應買止日</th>
-                    <th class="text-center align-middle">執行結果</th>
-                    <th class="text-center align-middle">搶標拍別</th>
-                    <th class="text-center align-middle">搶標金額</th>
-                    <th class="text-center align-middle">標的編號</th>
-                    <th class="text-center align-middle">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for result in case.results.all %}
-                    <tr>
-                      <td>{{ result.stopBuyDate|date:"Y-m-d"|default:"—" }}</td>
-                      <td>{{ result.actionResult|default:"—" }}</td>
-                      <td>{{ result.bidAuctionTime|default:"—" }}</td>
-                      <td>{{ result.bidMoney|default:"—" }}</td>
-                      <td>{{ result.objectNumber|default:"—" }}</td>
-                      <td class="text-end">
-                        {% if user.profile.role == 'admin' or user == case.user %}
-                        <a href="{% url 'result_update' result.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
-                        <a href="{% url 'result_delete' result.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
-                        {% endif %}
-                      </td>
-                    </tr>
-                  {% empty %}
-                    <tr><td colspan="6" class="text-center text-muted">無結果記錄。</td></tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          {% else %}
-            <div class="alert alert-info">無結果記錄。</div>
-          {% endif %}
-        </div>
-
-        <!-- Object Builds Tab -->
-        <div class="tab-pane fade" id="objectbuilds" role="tabpanel" aria-labelledby="objectbuilds-tab">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">比價建物</h5>
-            {% if user.profile.role == 'admin' or user == case.user %}
-            <a href="{% url 'objectbuild_create' case_pk=case.id %}" class="btn btn-sm btn-success">
-              <i class="bi bi-plus-circle"></i> 新增比價建物
-            </a>
-            {% endif %}
-          </div>
-          {% if case.objectbuilds.all %}
-            <div class="table-responsive">
-              <table class="table table-sm table-hover align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th class="text-center align-middle">參考物件訊息</th>
-                    <th class="text-center align-middle" colspan="1">加成</th>
-                    <th class="text-center align-middle">計算</th>
-                    <th class="text-center align-middle">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for ob in case.objectbuilds.all %}
-                    <tr>
-                      <td>
-                        類型: {{ ob.type }}<br>
-                        地址: {{ ob.address }}<br>
-                        附件: {% if ob.url %}<a href="{{ ob.url }}" target="_blank">連結</a>{% else %}<span class="text-muted">—</span>{% endif %}<br>
-                        屋齡(年): {{ ob.houseAge }}<br>
-                        成交日期: {{ ob.transactionDate|date:"Y-m-d"|default:"—" }}<br>
-                        樓高: {{ ob.floorHeight }}<br>
-                        總價: {{ ob.totalPrice }}<br>
-                        建坪(坪): {{ ob.buildArea }}<br>
-                        增建坪數(坪): {{ ob.subBuildArea }}<br>
-                        單價: {{ ob.unitPrice }}
-                      </td>
-                      <td>
-                        <table class="table table-sm table-borderless mb-0">
-                          <thead>
-                            <tr>
-                              <th class="text-center align-middle">勘查員</th>
-                              <th class="text-center align-middle">加成</th>
-                              <th class="text-center align-middle">加成原因</th>
-                              <th class="text-center align-middle">操作</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {% for bouns in ob.bounses.all %}
-                                <tr>
-                                  <td>{{ bouns.display_bouns_person }}</td>
-                                  <td>{{ bouns.bounsRate }}</td>
-                                  <td>{{ bouns.bounsReason }}</td>
-                                  <td>
-                                    {% if user.is_staff or user == bouns.bounsPerson %}
-                                    <a href="{% url 'bouns_update' bouns.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
-                                    <a href="{% url 'bouns_delete' bouns.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
-                                    {% endif %}
-                                  </td>
-                                </tr>
-                              {% empty %}
-                                <tr><td colspan="4" class="text-muted">無加成記錄。</td></tr>
-                            {% endfor %}
-                          </tbody>
-                        </table>
-                        {% if user.is_authenticated %}
-                        <a href="{% url 'bouns_create' objectbuild_pk=ob.id %}" class="btn btn-sm btn-success mt-2">
-                          <i class="bi bi-plus-circle"></i> 新增加成
-                        </a>
-                        {% endif %}
-                      </td>
-                      <td>{{ ob.calculate }}</td>
-                      <td class="text-end">
-                        {% if user.profile.role == 'admin' or user == case.user %}
-                        <a href="{% url 'objectbuild_update' ob.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
-                        <a href="{% url 'objectbuild_delete' ob.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
-                        {% endif %}
-                      </td>
-                    </tr>
-                  {% empty %}
-                    <tr><td colspan="4" class="text-center text-muted">無比價建物記錄。</td></tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          {% else %}
-            <div class="alert alert-info">無比價建物記錄。</div>
-          {% endif %}
-        </div>
-
-        <!-- Auctions Tab -->
-        <div class="tab-pane fade" id="auctions" role="tabpanel" aria-labelledby="auctions-tab">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">拍賣</h5>
-            {% if user.profile.role == 'admin' or user == case.user %}
-            <a href="{% url 'auction_create' case_pk=case.id %}" class="btn btn-sm btn-success">
-              <i class="bi bi-plus-circle"></i> 新增拍賣
-            </a>
-            {% endif %}
-          </div>
-          {% if case.auctions.all %}
-            <div class="table-responsive">
-              <table class="table table-sm table-hover align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th class="text-center align-middle">拍別</th>
-                    <th class="text-center align-middle">拍賣日</th>
-                    <th class="text-center align-middle">底價</th>
-                    <th class="text-center align-middle">坪價</th>
-                    <th class="text-center align-middle">CP</th>
-                    <th class="text-center align-middle">點閱</th>
-                    <th class="text-center align-middle">監控</th>
-                    <th class="text-center align-middle">成交件數</th>
-                    <th class="text-center align-middle">建議加價</th>
-                    <th class="text-center align-middle">保証金</th>
-                    <th class="text-center align-middle">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for auction in case.auctions.all %}
-                    <tr>
-                      <td>{{ auction.type }}</td>
-                      <td>{{ auction.auctionDate|date:"Y-m-d" }}</td>
-                      <td>
-                        <div>{{ auction.floorPrice }}</div>
-                        {% if auction.floorPrice %}
-                          {% if auction.type == '1拍' %}
-                            <div class="mt-1 suggested-prices" data-floor-price="{{ auction.floorPrice }}" data-auction-type="1拍" style="font-size: 0.85em; color: #6c757d;">
-                              <div>二拍建議底價：<span class="fw-bold text-primary suggested-2nd"></span></div>
-                              <div>三拍建議底價：<span class="fw-bold text-primary suggested-3rd"></span></div>
-                              <div>四拍建議底價：<span class="fw-bold text-primary suggested-4th"></span></div>
-                            </div>
-                          {% elif auction.type == '2拍' %}
-                            <div class="mt-1 suggested-prices" data-floor-price="{{ auction.floorPrice }}" data-auction-type="2拍" style="font-size: 0.85em; color: #6c757d;">
-                              <div>三拍建議底價：<span class="fw-bold text-primary suggested-3rd"></span></div>
-                              <div>四拍建議底價：<span class="fw-bold text-primary suggested-4th"></span></div>
-                            </div>
-                          {% elif auction.type == '3拍' %}
-                            <div class="mt-1 suggested-prices" data-floor-price="{{ auction.floorPrice }}" data-auction-type="3拍" style="font-size: 0.85em; color: #6c757d;">
-                              <div>四拍建議底價：<span class="fw-bold text-primary suggested-4th"></span></div>
-                            </div>
-                          {% endif %}
-                        {% endif %}
-                      </td>
-                      <td>{{ auction.pingPrice }}</td>
-                      <td>
-                        {% if auction.type == '1拍' and auction.calculated_cp_value > 0.92 or auction.type == '2拍' and auction.calculated_cp_value > 1.15 or auction.type == '3拍' and auction.calculated_cp_value > 1.44 or auction.type == '4拍' and auction.calculated_cp_value > 1.80 %}
-                          <span class="bg-white text-success fw-bold">{{ auction.calculated_cp_value }} (建議進場)</span>
-                        {% else %}
-                          <span class="bg-white text-danger fw-bold">{{ auction.calculated_cp_value }} (不可進場)</span>
-                        {% endif %}
-                      </td>
-                      <td>{{ auction.click }}</td>
-                      <td>{{ auction.monitor }}</td>
-                      <td>{{ auction.caseCount }}</td>
-                      <td>
-                        <div class="suggested-price-increase" 
-                             data-floor-price="{{ auction.floorPrice }}" 
-                             data-case-count="{{ auction.caseCount }}" 
-                             data-ping-price="{{ auction.pingPrice }}"
-                             data-avg-calculate="{{ auction.avg_objectbuild_calculate_display }}"
-                             style="font-size: 0.85em;">
-                          <div>a = <span class="fw-bold text-primary suggested-a">—</span></div>
-                          <div>b = <span class="fw-bold text-primary suggested-b">—</span></div>
-                          <div>建議加價：<span class="fw-bold text-success suggested-final">—</span></div>
-                        </div>
-                      </td>
-                      <td>{{ auction.margin }}</td>
-                      <td class="text-end">
-                        {% if user.profile.role == 'admin' or user == case.user %}
-                        <a href="{% url 'auction_update' auction.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
-                        <a href="{% url 'auction_delete' auction.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
-                        {% endif %}
-                      </td>
-                    </tr>
-                  {% empty %}
-                    <tr><td colspan="11" class="text-center text-muted">無拍賣記錄。</td></tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-              <div class="mt-3 text-danger fw-bold">
-                <p class="mb-0">成交件數：比較物件定義直徑2.5公里內/屋齡相近(10年)/最近一年成交件數</p>
-                <p class="mb-0">a=底價*(1+成交件數/4.5/100)</p>
-                <p class="mb-0">b=底價*((時價/坪價)/1.6)</p>
-                <p class="mb-0">最多不得低於1.6(若a > b,以b為加價依據，反之，則為a)</p>
+                  </tbody>
+                </table>
               </div>
             </div>
-          {% else %}
-            <div class="alert alert-info">無拍賣記錄。</div>
-          {% endif %}
-        </div>
-
-        <!-- Official Documents Tab -->
-        <div class="tab-pane fade" id="officialdocuments" role="tabpanel" aria-labelledby="officialdocuments-tab">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">公文</h5>
-            {% if user.profile.role == 'admin' or user == case.user %}
-            <a href="{% url 'officialdocument_create' case_pk=case.id %}" class="btn btn-sm btn-success">
-              <i class="bi bi-plus-circle"></i> 新增公文
-            </a>
-            {% endif %}
-          </div>
-          {% if case.officialdocuments.all %}
-            <div class="table-responsive">
-              <table class="table table-sm table-hover align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th class="text-center align-middle">案別</th>
-                    <th class="text-center align-middle">股別</th>
-                    <th class="text-center align-middle">案號</th>
-                    <th class="text-center align-middle">電話</th>
-                    <th class="text-center align-middle">分機</th>
-                    <th class="text-center align-middle">建立時間</th>
-                    <th class="text-center align-middle">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for doc in case.officialdocuments.all %}
-                    <tr>
-                      <td>{{ doc.type }}</td>
-                      <td>{{ doc.stock }}</td>
-                      <td>{{ doc.docNumber }}</td>
-                      <td>{{ doc.tel }}</td>
-                      <td>{{ doc.ext }}</td>
-                      <td>{{ doc.created|date:"Y-m-d H:i" }}</td>
-                      <td class="text-end">
-                        <a href="{% url 'officialdocument_detail' doc.id %}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
-                        {% if user.profile.role == 'admin' or user == case.user %}
-                        <a href="{% url 'officialdocument_update' doc.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
-                        <a href="{% url 'officialdocument_delete' doc.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
-                        {% endif %}
-                      </td>
-                    </tr>
-                  {% empty %}
-                    <tr><td colspan="6" class="text-center text-muted">無公文記錄。</td></tr>
-                  {% endfor %}
-                </tbody>
-              </table>
+            <!-- Lands Tab -->
+            <div class="tab-pane fade"
+                 id="lands"
+                 role="tabpanel"
+                 aria-labelledby="lands-tab">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">土地</h5>
+                {% if user.profile.role == 'admin' or user == case.user %}
+                  <a href="{% url 'land_create' case_pk=case.id %}"
+                     class="btn btn-sm btn-success">
+                    <i class="bi bi-plus-circle"></i> 新增土地
+                  </a>
+                {% endif %}
+              </div>
+              {% if case.lands.all %}
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover align-middle">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="text-center align-middle">地號</th>
+                        <th class="text-center align-middle">地坪(平方公尺)</th>
+                        <th class="text-center align-middle">個人持分</th>
+                        <th class="text-center align-middle">所有持分</th>
+                        <th class="text-center align-middle">計算後地坪(坪)</th>
+                        <th class="text-center align-middle">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for land in case.lands.all %}
+                        <tr>
+                          <td>
+                            {% if land.url %}
+                              <a href="{{ land.url }}" target="_blank" class="text-decoration-none">{{ land.formatted_landNumber }}</a>
+                            {% else %}
+                              {{ land.formatted_landNumber }}
+                            {% endif %}
+                          </td>
+                          <td class="text-center align-middle">{{ land.area }}</td>
+                          <td class="text-center align-middle">{{ land.holdingPointPersonal }}</td>
+                          <td class="text-center align-middle">{{ land.holdingPointAll }}</td>
+                          <td class="text-center align-middle">{{ land.calculatedArea }}</td>
+                          <td class="text-center align-middle">
+                            {% if user.profile.role == 'admin' or user == case.user %}
+                              <a href="{% url 'land_update' land.id %}"
+                                 class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                              </a>
+                              <a href="{% url 'land_delete' land.id %}"
+                                 class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                              </a>
+                            {% endif %}
+                          </td>
+                        </tr>
+                      {% empty %}
+                        <tr>
+                          <td colspan="6" class="text-center text-muted">無土地記錄。</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="alert alert-info">無土地記錄。</div>
+              {% endif %}
             </div>
-          {% else %}
-            <div class="alert alert-info">無公文記錄。</div>
-          {% endif %}
+            <!-- Builds Tab -->
+            <div class="tab-pane fade"
+                 id="builds"
+                 role="tabpanel"
+                 aria-labelledby="builds-tab">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">建物</h5>
+                {% if user.profile.role == 'admin' or user == case.user %}
+                  <a href="{% url 'build_create' case_pk=case.id %}"
+                     class="btn btn-sm btn-success">
+                    <i class="bi bi-plus-circle"></i> 新增建物
+                  </a>
+                {% endif %}
+              </div>
+              {% if case.builds.all %}
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover align-middle">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="text-center align-middle">建號</th>
+                        <th class="text-center align-middle">建坪(平方公尺)</th>
+                        <th class="text-center align-middle">個人持分</th>
+                        <th class="text-center align-middle">所有持分</th>
+                        <th class="text-center align-middle">計算後建坪</th>
+                        <th class="text-center align-middle">建物型</th>
+                        <th class="text-center align-middle">使用分區</th>
+                        <th class="text-center align-middle">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for build in case.builds.all %}
+                        <tr>
+                          <td>
+                            {% if build.url %}
+                              <a href="{{ build.url }}" target="_blank" class="text-decoration-none">{{ build.formatted_buildNumber }}</a>
+                            {% else %}
+                              {{ build.formatted_buildNumber }}
+                            {% endif %}
+                          </td>
+                          <td class="text-center align-middle">{{ build.area }}</td>
+                          <td class="text-center align-middle">{{ build.holdingPointPersonal }}</td>
+                          <td class="text-center align-middle">{{ build.holdingPointAll }}</td>
+                          <td class="text-center align-middle">{{ build.calculatedArea }}</td>
+                          <td class="text-center align-middle">{{ build.typeUse }}</td>
+                          <td class="text-center align-middle">{{ build.usePartition }}</td>
+                          <td class="text-center align-middle">
+                            {% if user.profile.role == 'admin' or user == case.user %}
+                              <a href="{% url 'build_update' build.id %}"
+                                 class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                              </a>
+                              <a href="{% url 'build_delete' build.id %}"
+                                 class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                              </a>
+                            {% endif %}
+                          </td>
+                        </tr>
+                      {% empty %}
+                        <tr>
+                          <td colspan="8" class="text-center text-muted">無建物記錄。</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="alert alert-info">無建物記錄。</div>
+              {% endif %}
+            </div>
+            <!-- People Tab -->
+            <div class="tab-pane fade"
+                 id="people"
+                 role="tabpanel"
+                 aria-labelledby="people-tab">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">人員</h5>
+                {% if user.profile.role == 'admin' or user == case.user %}
+                  <a href="{% url 'person_create' case_pk=case.id %}"
+                     class="btn btn-sm btn-success">
+                    <i class="bi bi-plus-circle"></i> 新增人員
+                  </a>
+                {% endif %}
+              </div>
+              {% if case.people.all %}
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover align-middle">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="text-center align-middle">姓名</th>
+                        <th class="text-center align-middle">分類</th>
+                        <th class="text-center align-middle">電話</th>
+                        <th class="text-center align-middle" id="holding-share-header">持分比例</th>
+                        <th class="text-center align-middle" id="investment-share-header">投資比例</th>
+                        <th class="text-center align-middle">備註</th>
+                        <th class="text-center align-middle">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for person in case.people.all %}
+                        <tr>
+                          <td>{{ person.name }}</td>
+                          <td class="text-center align-middle">{{ person.type }}</td>
+                          <td class="text-center align-middle">{{ person.phone|default:"" }}</td>
+                          <td class="text-center align-middle"
+                              data-holding-numerator="{{ person.holdingShareNumerator|default:0 }}"
+                              data-holding-denominator="{{ person.holdingShareDenominator|default:0 }}">
+                            {% if person.holdingShareNumerator and person.holdingShareDenominator %}
+                              {{ person.holdingShareNumerator }}/{{ person.holdingShareDenominator }}
+                            {% else %}
+                              —
+                            {% endif %}
+                          </td>
+                          <td class="text-center align-middle"
+                              data-investment-numerator="{{ person.investmentNumerator|default:0 }}"
+                              data-investment-denominator="{{ person.investmentDenominator|default:0 }}">
+                            {% if person.investmentNumerator and person.investmentDenominator %}
+                              {{ person.investmentNumerator }}/{{ person.investmentDenominator }}
+                            {% else %}
+                              —
+                            {% endif %}
+                          </td>
+                          <td style="word-wrap: break-word;white-space: pre-wrap;max-width: 300px">{{ person.remark|default:"" }}</td>
+                          <td class="text-center align-middle">
+                            {% if user.profile.role == 'admin' or user == case.user %}
+                              <a href="{% url 'person_update' person.id %}"
+                                 class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                              </a>
+                              <a href="{% url 'person_delete' person.id %}"
+                                 class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                              </a>
+                            {% endif %}
+                          </td>
+                        </tr>
+                      {% empty %}
+                        <tr>
+                          <td colspan="7" class="text-center text-muted">無人員記錄。</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="alert alert-info">無人員記錄。</div>
+              {% endif %}
+            </div>
+            <!-- Surveys Tab -->
+            <div class="tab-pane fade"
+                 id="surveys"
+                 role="tabpanel"
+                 aria-labelledby="surveys-tab">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">勘查</h5>
+                {% if user.profile.role == 'admin' or user == case.user %}
+                  <a href="{% url 'survey_create' case_pk=case.id %}"
+                     class="btn btn-sm btn-success">
+                    <i class="bi bi-plus-circle"></i> 新增勘查
+                  </a>
+                {% endif %}
+              </div>
+              {% if case.surveys.all %}
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover align-middle">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="text-center align-middle">初勘日</th>
+                        <th class="text-center align-middle">會勘日</th>
+                        <th class="text-center align-middle">法拍公告</th>
+                        <th class="text-center align-middle">998</th>
+                        <th class="text-center align-middle">物件照片</th>
+                        <th class="text-center align-middle">市場行情</th>
+                        <th class="text-center align-middle">法拍記錄</th>
+                        <th class="text-center align-middle">現場勘查</th>
+                        <th class="text-center align-middle">收發文薄</th>
+                        <th class="text-center align-middle">流水帳</th>
+                        <th class="text-center align-middle">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for s in case.surveys.all %}
+                        <tr>
+                          <td>{{ s.firstDay|date:"Y-m-d"|default:"—" }}</td>
+                          <td>{{ s.secondDay|date:"Y-m-d"|default:"—" }}</td>
+                          <td>
+                            {% if s.foreclosureAnnouncementLink %}
+                              <a href="{{ s.foreclosureAnnouncementLink }}" target="_blank">連結</a>
+                            {% else %}
+                              <span class="text-muted">—</span>
+                            {% endif %}
+                          </td>
+                          <td>
+                            {% if s.house988Link %}
+                              <a href="{{ s.house988Link }}" target="_blank">連結</a>
+                            {% else %}
+                              <span class="text-muted">—</span>
+                            {% endif %}
+                          </td>
+                          <td>
+                            {% if s.objectPhotoLink %}
+                              <a href="{{ s.objectPhotoLink }}" target="_blank">連結</a>
+                            {% else %}
+                              <span class="text-muted">—</span>
+                            {% endif %}
+                          </td>
+                          <td>
+                            {% if s.netMarketPriceLink %}
+                              <a href="{{ s.netMarketPriceLink }}" target="_blank">連結</a>
+                            {% else %}
+                              <span class="text-muted">—</span>
+                            {% endif %}
+                          </td>
+                          <td>
+                            {% if s.foreclosureRecordLink %}
+                              <a href="{{ s.foreclosureRecordLink }}" target="_blank">連結</a>
+                            {% else %}
+                              <span class="text-muted">—</span>
+                            {% endif %}
+                          </td>
+                          <td>
+                            {% if s.objectViewLink %}
+                              <a href="{{ s.objectViewLink }}" target="_blank">連結</a>
+                            {% else %}
+                              <span class="text-muted">—</span>
+                            {% endif %}
+                          </td>
+                          <td>
+                            {% if s.pagesViewLink %}
+                              <a href="{{ s.pagesViewLink }}" target="_blank">連結</a>
+                            {% else %}
+                              <span class="text-muted">—</span>
+                            {% endif %}
+                          </td>
+                          <td>
+                            {% if s.moneytViewLink %}
+                              <a href="{{ s.moneytViewLink }}" target="_blank">連結</a>
+                            {% else %}
+                              <span class="text-muted">—</span>
+                            {% endif %}
+                          </td>
+                          <td class="text-end">
+                            {% if user.profile.role == 'admin' or user == case.user %}
+                              <a href="{% url 'survey_update' s.id %}"
+                                 class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                              <a href="{% url 'survey_delete' s.id %}"
+                                 class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                            {% endif %}
+                          </td>
+                        </tr>
+                      {% empty %}
+                        <tr>
+                          <td colspan="11" class="text-center text-muted">無勘查記錄。</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="alert alert-info">無勘查記錄。</div>
+              {% endif %}
+            </div>
+            <!-- Final Decisions Tab -->
+            <div class="tab-pane fade"
+                 id="finaldecisions"
+                 role="tabpanel"
+                 aria-labelledby="finaldecisions-tab">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">最終判定</h5>
+                {% if user.profile.role == 'admin' or user == case.user %}
+                  <a href="{% url 'finaldecision_create' case_pk=case.id %}"
+                     class="btn btn-sm btn-success">
+                    <i class="bi bi-plus-circle"></i> 新增最終判定
+                  </a>
+                {% endif %}
+              </div>
+              {% if case.finaldecisions.all %}
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover align-middle">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="text-center align-middle">最終判定</th>
+                        <th class="text-center align-middle">分類</th>
+                        <th class="text-center align-middle">人員</th>
+                        <th class="text-center align-middle">日期</th>
+                        <th class="text-center align-middle">工作轄區</th>
+                        <th class="text-center align-middle">備註</th>
+                        <th class="text-center align-middle">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for fd in case.finaldecisions.all %}
+                        <tr>
+                          <td class="text-center align-middle">{{ fd.finalDecision }}</td>
+                          <td class="text-center align-middle">{{ fd.type }}</td>
+                          <td class="text-center align-middle">{{ fd.name }}</td>
+                          <td class="text-center align-middle">{{ fd.date|date:"Y-m-d"|default:"—" }}</td>
+                          <td class="text-center align-middle">
+                            {% if fd.workArea == 'north' %}
+                              雙北桃竹苗
+                            {% elif fd.workArea == 'central' %}
+                              中彰投
+                            {% elif fd.workArea == 'south' %}
+                              雲嘉南
+                            {% elif fd.workArea == 'kaoping' %}
+                              高高屏
+                            {% else %}
+                              {{ fd.workArea|default:"—" }}
+                            {% endif %}
+                          </td>
+                          <td style="word-wrap: break-word; white-space: pre-wrap;max-width: 500px">{{ fd.remark }}</td>
+                          <td class="text-center align-middle">
+                            {% if user.profile.role == 'admin' or user == case.user %}
+                              <a href="{% url 'finaldecision_update' fd.id %}"
+                                 class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                              <a href="{% url 'finaldecision_delete' fd.id %}"
+                                 class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                            {% endif %}
+                          </td>
+                        </tr>
+                      {% empty %}
+                        <tr>
+                          <td colspan="7" class="text-center text-muted">無最終判定記錄。</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="alert alert-info">無最終判定記錄。</div>
+              {% endif %}
+            </div>
+            <!-- Results Tab -->
+            <div class="tab-pane fade"
+                 id="results"
+                 role="tabpanel"
+                 aria-labelledby="results-tab">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">結果</h5>
+                {% if user.profile.role == 'admin' or user == case.user %}
+                  <a href="{% url 'result_create' case_pk=case.id %}"
+                     class="btn btn-sm btn-success">
+                    <i class="bi bi-plus-circle"></i> 新增結果
+                  </a>
+                {% endif %}
+              </div>
+              {% if case.results.all %}
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover align-middle">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="text-center align-middle">應買止日</th>
+                        <th class="text-center align-middle">執行結果</th>
+                        <th class="text-center align-middle">搶標拍別</th>
+                        <th class="text-center align-middle">搶標金額</th>
+                        <th class="text-center align-middle">標的編號</th>
+                        <th class="text-center align-middle">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for result in case.results.all %}
+                        <tr>
+                          <td class="text-center align-middle">{{ result.stopBuyDate|date:"Y-m-d"|default:"—" }}</td>
+                          <td class="text-center align-middle">{{ result.actionResult|default:"—" }}</td>
+                          <td class="text-center align-middle">{{ result.bidAuctionTime|default:"—" }}</td>
+                          <td class="text-center align-middle">{{ result.bidMoney|default:"—" }}</td>
+                          <td class="text-center align-middle">{{ result.objectNumber|default:"—" }}</td>
+                          <td class="text-center align-middle">
+                            {% if user.profile.role == 'admin' or user == case.user %}
+                              <a href="{% url 'result_update' result.id %}"
+                                 class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                              <a href="{% url 'result_delete' result.id %}"
+                                 class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                            {% endif %}
+                          </td>
+                        </tr>
+                      {% empty %}
+                        <tr>
+                          <td colspan="6" class="text-center text-muted">無結果記錄。</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="alert alert-info">無結果記錄。</div>
+              {% endif %}
+            </div>
+            <!-- Object Builds Tab -->
+            <div class="tab-pane fade"
+                 id="objectbuilds"
+                 role="tabpanel"
+                 aria-labelledby="objectbuilds-tab">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">比價建物</h5>
+                {% if user.profile.role == 'admin' or user == case.user %}
+                  <a href="{% url 'objectbuild_create' case_pk=case.id %}"
+                     class="btn btn-sm btn-success">
+                    <i class="bi bi-plus-circle"></i> 新增比價建物
+                  </a>
+                {% endif %}
+              </div>
+              {% if case.objectbuilds.all %}
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover align-middle">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="text-center align-middle">參考物件訊息</th>
+                        <th class="text-center align-middle" colspan="1">加成</th>
+                        <th class="text-center align-middle">計算</th>
+                        <th class="text-center align-middle">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for ob in case.objectbuilds.all %}
+                        <tr>
+                          <td>
+                            類型: {{ ob.type }}
+                            <br />
+                            地址: {{ ob.address }}
+                            <br />
+                            附件:
+                            {% if ob.url %}
+                              <a href="{{ ob.url }}" target="_blank">連結</a>
+                            {% else %}
+                              <span class="text-muted">—</span>
+                            {% endif %}
+                            <br />
+                            屋齡(年): {{ ob.houseAge }}
+                            <br />
+                            成交日期: {{ ob.transactionDate|date:"Y-m-d"|default:"—" }}
+                            <br />
+                            樓高: {{ ob.floorHeight }}
+                            <br />
+                            總價: {{ ob.totalPrice }}
+                            <br />
+                            建坪(坪): {{ ob.buildArea }}
+                            <br />
+                            增建坪數(坪): {{ ob.subBuildArea }}
+                            <br />
+                            單價: {{ ob.unitPrice }}
+                          </td>
+                          <td>
+                            <table class="table table-sm table-borderless mb-0">
+                              <thead>
+                                <tr>
+                                  <th class="text-center align-middle">勘查員</th>
+                                  <th class="text-center align-middle">加成</th>
+                                  <th class="text-center align-middle">加成原因</th>
+                                  <th class="text-center align-middle">操作</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {% for bouns in ob.bounses.all %}
+                                  <tr>
+                                    <td>{{ bouns.display_bouns_person }}</td>
+                                    <td>{{ bouns.bounsRate }}</td>
+                                    <td>{{ bouns.bounsReason }}</td>
+                                    <td>
+                                      {% if user.is_staff or user == bouns.bounsPerson %}
+                                        <a href="{% url 'bouns_update' bouns.id %}"
+                                           class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                                        <a href="{% url 'bouns_delete' bouns.id %}"
+                                           class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                                      {% endif %}
+                                    </td>
+                                  </tr>
+                                {% empty %}
+                                  <tr>
+                                    <td colspan="4" class="text-muted">無加成記錄。</td>
+                                  </tr>
+                                {% endfor %}
+                              </tbody>
+                            </table>
+                            {% if user.is_authenticated %}
+                              <a href="{% url 'bouns_create' objectbuild_pk=ob.id %}"
+                                 class="btn btn-sm btn-success mt-2">
+                                <i class="bi bi-plus-circle"></i> 新增加成
+                              </a>
+                            {% endif %}
+                          </td>
+                          <td>{{ ob.calculate }}</td>
+                          <td class="text-end">
+                            {% if user.profile.role == 'admin' or user == case.user %}
+                              <a href="{% url 'objectbuild_update' ob.id %}"
+                                 class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                              <a href="{% url 'objectbuild_delete' ob.id %}"
+                                 class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                            {% endif %}
+                          </td>
+                        </tr>
+                      {% empty %}
+                        <tr>
+                          <td colspan="4" class="text-center text-muted">無比價建物記錄。</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="alert alert-info">無比價建物記錄。</div>
+              {% endif %}
+            </div>
+            <!-- Auctions Tab -->
+            <div class="tab-pane fade"
+                 id="auctions"
+                 role="tabpanel"
+                 aria-labelledby="auctions-tab">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">拍賣</h5>
+                {% if user.profile.role == 'admin' or user == case.user %}
+                  <a href="{% url 'auction_create' case_pk=case.id %}"
+                     class="btn btn-sm btn-success">
+                    <i class="bi bi-plus-circle"></i> 新增拍賣
+                  </a>
+                {% endif %}
+              </div>
+              {% if case.auctions.all %}
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover align-middle">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="text-center align-middle">拍別</th>
+                        <th class="text-center align-middle">拍賣日</th>
+                        <th class="text-center align-middle">底價</th>
+                        <th class="text-center align-middle">坪價</th>
+                        <th class="text-center align-middle">CP</th>
+                        <th class="text-center align-middle">點閱</th>
+                        <th class="text-center align-middle">監控</th>
+                        <th class="text-center align-middle">成交件數</th>
+                        <th class="text-center align-middle">建議加價</th>
+                        <th class="text-center align-middle">保証金</th>
+                        <th class="text-center align-middle">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for auction in case.auctions.all %}
+                        <tr>
+                          <td class="text-center align-middle">{{ auction.type }}</td>
+                          <td class="text-center align-middle">{{ auction.auctionDate|date:"Y-m-d" }}</td>
+                          <td class="text-center align-middle">
+                            <div>{{ auction.floorPrice }}</div>
+                            {% if auction.floorPrice %}
+                              {% if auction.type == '1拍' %}
+                                <div class="mt-1 suggested-prices"
+                                     data-floor-price="{{ auction.floorPrice }}"
+                                     data-auction-type="1拍"
+                                     style="font-size: 0.85em;
+                                            color: #6c757d">
+                                  <div>
+                                    二拍建議底價：<span class="fw-bold text-primary suggested-2nd"></span>
+                                  </div>
+                                  <div>
+                                    三拍建議底價：<span class="fw-bold text-primary suggested-3rd"></span>
+                                  </div>
+                                  <div>
+                                    四拍建議底價：<span class="fw-bold text-primary suggested-4th"></span>
+                                  </div>
+                                </div>
+                              {% elif auction.type == '2拍' %}
+                                <div class="mt-1 suggested-prices"
+                                     data-floor-price="{{ auction.floorPrice }}"
+                                     data-auction-type="2拍"
+                                     style="font-size: 0.85em;
+                                            color: #6c757d">
+                                  <div>
+                                    三拍建議底價：<span class="fw-bold text-primary suggested-3rd"></span>
+                                  </div>
+                                  <div>
+                                    四拍建議底價：<span class="fw-bold text-primary suggested-4th"></span>
+                                  </div>
+                                </div>
+                              {% elif auction.type == '3拍' %}
+                                <div class="mt-1 suggested-prices"
+                                     data-floor-price="{{ auction.floorPrice }}"
+                                     data-auction-type="3拍"
+                                     style="font-size: 0.85em;
+                                            color: #6c757d">
+                                  <div>
+                                    四拍建議底價：<span class="fw-bold text-primary suggested-4th"></span>
+                                  </div>
+                                </div>
+                              {% endif %}
+                            {% endif %}
+                          </td>
+                          <td class="text-center align-middle">{{ auction.pingPrice }}</td>
+                          <td class="text-center align-middle">
+                            {% if auction.type == '1拍' and auction.calculated_cp_value > 0.92 or auction.type == '2拍' and auction.calculated_cp_value > 1.15 or auction.type == '3拍' and auction.calculated_cp_value > 1.44 or auction.type == '4拍' and auction.calculated_cp_value > 1.80 %}
+                              <span class="bg-white text-success fw-bold">{{ auction.calculated_cp_value }} (建議進場)</span>
+                            {% else %}
+                              <span class="bg-white text-danger fw-bold">{{ auction.calculated_cp_value }} (不可進場)</span>
+                            {% endif %}
+                          </td>
+                          <td class="text-center align-middle">{{ auction.click }}</td>
+                          <td class="text-center align-middle">{{ auction.monitor }}</td>
+                          <td class="text-center align-middle">{{ auction.caseCount }}</td>
+                          <td class="text-center align-middle">
+                            <div class="suggested-price-increase"
+                                 data-floor-price="{{ auction.floorPrice }}"
+                                 data-case-count="{{ auction.caseCount }}"
+                                 data-ping-price="{{ auction.pingPrice }}"
+                                 data-avg-calculate="{{ auction.avg_objectbuild_calculate_display }}"
+                                 style="font-size: 0.85em">
+                              <div>
+                                a =
+                                <span class="fw-bold text-primary suggested-a">—</span>
+                              </div>
+                              <div>
+                                b =
+                                <span class="fw-bold text-primary suggested-b">—</span>
+                              </div>
+                              <div>
+                                建議加價：<span class="fw-bold text-success suggested-final">—</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td class="text-center align-middle">{{ auction.margin }}</td>
+                          <td class="text-center align-middle">
+                            {% if user.profile.role == 'admin' or user == case.user %}
+                              <a href="{% url 'auction_update' auction.id %}"
+                                 class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                              <a href="{% url 'auction_delete' auction.id %}"
+                                 class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                            {% endif %}
+                          </td>
+                        </tr>
+                      {% empty %}
+                        <tr>
+                          <td colspan="11" class="text-center text-muted">無拍賣記錄。</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                  <div class="mt-3 text-danger fw-bold">
+                    <p class="mb-0">成交件數：比較物件定義直徑2.5公里內/屋齡相近(10年)/最近一年成交件數</p>
+                    <p class="mb-0">a=底價*(1+成交件數/4.5/100)</p>
+                    <p class="mb-0">b=底價*((時價/坪價)/1.6)</p>
+                    <p class="mb-0">最多不得低於1.6(若a > b,以b為加價依據，反之，則為a)</p>
+                  </div>
+                </div>
+              {% else %}
+                <div class="alert alert-info">無拍賣記錄。</div>
+              {% endif %}
+            </div>
+            <!-- Official Documents Tab -->
+            <div class="tab-pane fade"
+                 id="officialdocuments"
+                 role="tabpanel"
+                 aria-labelledby="officialdocuments-tab">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">公文</h5>
+                {% if user.profile.role == 'admin' or user == case.user %}
+                  <a href="{% url 'officialdocument_create' case_pk=case.id %}"
+                     class="btn btn-sm btn-success">
+                    <i class="bi bi-plus-circle"></i> 新增公文
+                  </a>
+                {% endif %}
+              </div>
+              {% if case.officialdocuments.all %}
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover align-middle">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="text-center align-middle">案別</th>
+                        <th class="text-center align-middle">股別</th>
+                        <th class="text-center align-middle">案號</th>
+                        <th class="text-center align-middle">電話</th>
+                        <th class="text-center align-middle">分機</th>
+                        <th class="text-center align-middle">建立時間</th>
+                        <th class="text-center align-middle">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for doc in case.officialdocuments.all %}
+                        <tr>
+                          <td class="text-center align-middle">{{ doc.type }}</td>
+                          <td class="text-center align-middle">{{ doc.stock }}</td>
+                          <td class="text-center align-middle">{{ doc.docNumber }}</td>
+                          <td class="text-center align-middle">{{ doc.tel }}</td>
+                          <td class="text-center align-middle">{{ doc.ext }}</td>
+                          <td class="text-center align-middle">{{ doc.created|date:"Y-m-d H:i" }}</td>
+                          <td class="text-center align-middle">
+                            <a href="{% url 'officialdocument_detail' doc.id %}"
+                               class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
+                            {% if user.profile.role == 'admin' or user == case.user %}
+                              <a href="{% url 'officialdocument_update' doc.id %}"
+                                 class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                              <a href="{% url 'officialdocument_delete' doc.id %}"
+                                 class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                            {% endif %}
+                          </td>
+                        </tr>
+                      {% empty %}
+                        <tr>
+                          <td colspan="6" class="text-center text-muted">無公文記錄。</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="alert alert-info">無公文記錄。</div>
+              {% endif %}
+            </div>
+          </div>
         </div>
       </div>
-
     </div>
   </div>
-</div>
 {% endblock %}
-
 {% block extra_js %}
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
+  <script>
+  document.addEventListener("DOMContentLoaded", function () {
     const hash = window.location.hash;
-    console.log('Current URL hash:', hash);
+    console.log("Current URL hash:", hash);
     if (hash) {
-      const triggerEl = document.querySelector(`button[data-bs-target="${hash}"]`);
-      console.log('Trigger element found:', triggerEl);
+      const triggerEl = document.querySelector(
+        `button[data-bs-target="${hash}"]`
+      );
+      console.log("Trigger element found:", triggerEl);
       if (triggerEl) {
         // Ensure Bootstrap's Tab is available
         if (window.bootstrap && window.bootstrap.Tab) {
           const tab = new window.bootstrap.Tab(triggerEl);
           tab.show();
-          console.log('Tab activated:', hash);
+          console.log("Tab activated:", hash);
         } else {
-          console.error('Bootstrap Tab JavaScript not loaded or initialized.');
+          console.error("Bootstrap Tab JavaScript not loaded or initialized.");
         }
       } else {
-        console.warn('No tab button found for hash:', hash);
+        console.warn("No tab button found for hash:", hash);
       }
     }
   });
 
   // 計算並顯示建議底價
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener("DOMContentLoaded", function () {
     function formatNumber(num) {
-      return Math.round(num).toLocaleString('zh-TW');
+      return Math.round(num).toLocaleString("zh-TW");
     }
 
-    const suggestedPricesDivs = document.querySelectorAll('.suggested-prices');
-    suggestedPricesDivs.forEach(function(div) {
-      const floorPrice = parseFloat(div.getAttribute('data-floor-price'));
-      const auctionType = div.getAttribute('data-auction-type');
-      
+    const suggestedPricesDivs = document.querySelectorAll(".suggested-prices");
+    suggestedPricesDivs.forEach(function (div) {
+      const floorPrice = parseFloat(div.getAttribute("data-floor-price"));
+      const auctionType = div.getAttribute("data-auction-type");
+
       if (!isNaN(floorPrice) && floorPrice > 0) {
-        if (auctionType === '1拍') {
+        if (auctionType === "1拍") {
           // 1拍：顯示二拍、三拍、四拍建議底價
           const price2nd = floorPrice * 0.8;
           const price3rd = floorPrice * 0.64;
           const price4th = floorPrice * 0.512;
 
-          const suggested2nd = div.querySelector('.suggested-2nd');
-          const suggested3rd = div.querySelector('.suggested-3rd');
-          const suggested4th = div.querySelector('.suggested-4th');
+          const suggested2nd = div.querySelector(".suggested-2nd");
+          const suggested3rd = div.querySelector(".suggested-3rd");
+          const suggested4th = div.querySelector(".suggested-4th");
 
           if (suggested2nd) suggested2nd.textContent = formatNumber(price2nd);
           if (suggested3rd) suggested3rd.textContent = formatNumber(price3rd);
           if (suggested4th) suggested4th.textContent = formatNumber(price4th);
-        } else if (auctionType === '2拍') {
+        } else if (auctionType === "2拍") {
           // 2拍：顯示三拍、四拍建議底價
           const price3rd = floorPrice * 0.8;
           const price4th = floorPrice * 0.64;
 
-          const suggested3rd = div.querySelector('.suggested-3rd');
-          const suggested4th = div.querySelector('.suggested-4th');
+          const suggested3rd = div.querySelector(".suggested-3rd");
+          const suggested4th = div.querySelector(".suggested-4th");
 
           if (suggested3rd) suggested3rd.textContent = formatNumber(price3rd);
           if (suggested4th) suggested4th.textContent = formatNumber(price4th);
-        } else if (auctionType === '3拍') {
+        } else if (auctionType === "3拍") {
           // 3拍：顯示四拍建議底價
           const price4th = floorPrice * 0.8;
 
-          const suggested4th = div.querySelector('.suggested-4th');
+          const suggested4th = div.querySelector(".suggested-4th");
 
           if (suggested4th) suggested4th.textContent = formatNumber(price4th);
         }
@@ -810,14 +1050,23 @@
     });
 
     // 計算並顯示建議加價
-    const suggestedPriceIncreaseDivs = document.querySelectorAll('.suggested-price-increase');
-    suggestedPriceIncreaseDivs.forEach(function(div) {
-      const floorPrice = parseFloat(div.getAttribute('data-floor-price'));
-      const caseCount = parseFloat(div.getAttribute('data-case-count')) || 0;
-      const pingPrice = parseFloat(div.getAttribute('data-ping-price'));
-      const avgCalculate = parseFloat(div.getAttribute('data-avg-calculate'));
+    const suggestedPriceIncreaseDivs = document.querySelectorAll(
+      ".suggested-price-increase"
+    );
+    suggestedPriceIncreaseDivs.forEach(function (div) {
+      const floorPrice = parseFloat(div.getAttribute("data-floor-price"));
+      const caseCount = parseFloat(div.getAttribute("data-case-count")) || 0;
+      const pingPrice = parseFloat(div.getAttribute("data-ping-price"));
+      const avgCalculate = parseFloat(div.getAttribute("data-avg-calculate"));
 
-      if (!isNaN(floorPrice) && floorPrice > 0 && !isNaN(pingPrice) && pingPrice > 0 && !isNaN(avgCalculate) && avgCalculate > 0) {
+      if (
+        !isNaN(floorPrice) &&
+        floorPrice > 0 &&
+        !isNaN(pingPrice) &&
+        pingPrice > 0 &&
+        !isNaN(avgCalculate) &&
+        avgCalculate > 0
+      ) {
         // 計算 a = 底價 * (1 + 成交件數 / 4.5 / 100)
         const a = floorPrice * (1 + caseCount / 4.5 / 100);
 
@@ -829,29 +1078,89 @@
         // 若 a > b，以 b 為加價依據，反之，則為 a
         const suggestedPrice = a > b ? b : a;
 
-        const suggestedA = div.querySelector('.suggested-a');
-        const suggestedB = div.querySelector('.suggested-b');
-        const suggestedFinal = div.querySelector('.suggested-final');
+        const suggestedA = div.querySelector(".suggested-a");
+        const suggestedB = div.querySelector(".suggested-b");
+        const suggestedFinal = div.querySelector(".suggested-final");
 
         if (suggestedA) suggestedA.textContent = formatNumber(a);
         if (suggestedB) suggestedB.textContent = formatNumber(b);
-        if (suggestedFinal) suggestedFinal.textContent = formatNumber(suggestedPrice);
+        if (suggestedFinal)
+          suggestedFinal.textContent = formatNumber(suggestedPrice);
       }
     });
   });
 
   // 將所有 tab 標題中的括號內容（含括號）設為粗體紅字
-  document.addEventListener('DOMContentLoaded', function() {
-    const tabButtons = document.querySelectorAll('.nav-link');
-    tabButtons.forEach(function(button) {
+  document.addEventListener("DOMContentLoaded", function () {
+    const tabButtons = document.querySelectorAll(".nav-link");
+    tabButtons.forEach(function (button) {
       const text = button.innerHTML;
       // 使用正則表達式匹配括號內的內容（含括號）
       const regex = /(\([^)]*\))/g;
-      const newText = text.replace(regex, '<span style="font-weight: bold; color: red;">$1</span>');
+      const newText = text.replace(
+        regex,
+        '<span style="font-weight: bold; color: red;">$1</span>'
+      );
       if (newText !== text) {
         button.innerHTML = newText;
       }
     });
   });
-</script>
+
+  // 驗證持分比例和投資比例總和
+  document.addEventListener("DOMContentLoaded", function () {
+    function checkRatios() {
+      // 檢查持分比例
+      const holdingShareCells = document.querySelectorAll("#people tbody tr td[data-holding-numerator]");
+      let holdingShareTotal = 0;
+      holdingShareCells.forEach(function (cell) {
+        const numerator = parseFloat(cell.getAttribute("data-holding-numerator")) || 0;
+        const denominator = parseFloat(cell.getAttribute("data-holding-denominator")) || 0;
+        if (denominator > 0) {
+          holdingShareTotal += numerator / denominator;
+        }
+      });
+      
+      const holdingShareHeader = document.getElementById("holding-share-header");
+      if (holdingShareHeader) {
+        if (Math.abs(holdingShareTotal - 1) > 0.0001) { // 使用小誤差來處理浮點數精度問題
+          holdingShareHeader.innerHTML = '持分比例<span style="background-color: red; color: white; padding: 2px 6px; border-radius: 3px; margin-left: 5px;">(未持平)</span>';
+        } else {
+          holdingShareHeader.innerHTML = "持分比例";
+        }
+      }
+
+      // 檢查投資比例
+      const investmentShareCells = document.querySelectorAll("#people tbody tr td[data-investment-numerator]");
+      let investmentShareTotal = 0;
+      investmentShareCells.forEach(function (cell) {
+        const numerator = parseFloat(cell.getAttribute("data-investment-numerator")) || 0;
+        const denominator = parseFloat(cell.getAttribute("data-investment-denominator")) || 0;
+        if (denominator > 0) {
+          investmentShareTotal += numerator / denominator;
+        }
+      });
+      
+      const investmentShareHeader = document.getElementById("investment-share-header");
+      if (investmentShareHeader) {
+        if (Math.abs(investmentShareTotal - 1) > 0.0001) { // 使用小誤差來處理浮點數精度問題
+          investmentShareHeader.innerHTML = '投資比例<span style="background-color: red; color: white; padding: 2px 6px; border-radius: 3px; margin-left: 5px;">(未持平)</span>';
+        } else {
+          investmentShareHeader.innerHTML = "投資比例";
+        }
+      }
+    }
+
+    // 初始檢查
+    checkRatios();
+
+    // 當切換到人員tab時也檢查
+    const peopleTab = document.getElementById("people-tab");
+    if (peopleTab) {
+      peopleTab.addEventListener("shown.bs.tab", function () {
+        checkRatios();
+      });
+    }
+  });
+  </script>
 {% endblock %}

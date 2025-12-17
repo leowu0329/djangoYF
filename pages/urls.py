@@ -6,6 +6,9 @@ urlpatterns = [
     # AJAX endpoints (用於互動式聯集下拉選單)
     path('ajax/load-townships/', views.load_townships, name='ajax_load_townships'),
     path('ajax/get-city-for-township/', views.get_city_for_township, name='ajax_get_city_for_township'),
+    path('ajax/load-peterpens/', views.load_peterpens, name='load_peterpens'),
+    path('ajax/create-peterpen/', views.create_peterpen, name='create_peterpen'),
+    path('ajax/load-user-select-options/', views.load_user_select_options, name='load_user_select_options'),
 
     path('', CaseListView.as_view(), name='home'),
     path('cases/', CaseListView.as_view(), name='case_list'),
