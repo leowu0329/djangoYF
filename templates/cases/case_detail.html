@@ -687,20 +687,18 @@
                           <td>
                             類型: {{ ob.type }}
                             <br />
-                            地址: {{ ob.address }}
-                            <br />
-                            附件:
+                            地址: 
                             {% if ob.url %}
-                              <a href="{{ ob.url }}" target="_blank">連結</a>
+                              <a href="{{ ob.url }}" target="_blank">{{ ob.address }}</a>
                             {% else %}
-                              <span class="text-muted">—</span>
+                              {{ ob.address }}
                             {% endif %}
                             <br />
-                            屋齡(年): {{ ob.houseAge }}
+                            屋齡(年): {% if ob.houseAge is not None and ob.houseAge != 0 %}{{ ob.houseAge }}{% else %}未填寫{% endif %}
                             <br />
                             成交日期: {{ ob.transactionDate|date:"Y-m-d"|default:"—" }}
                             <br />
-                            樓高: {{ ob.floorHeight }}
+                            樓高: {% if ob.floorHeight %}{{ ob.floorHeight }}{% else %}未填寫{% endif %}
                             <br />
                             總價: {{ ob.totalPrice }}
                             <br />
