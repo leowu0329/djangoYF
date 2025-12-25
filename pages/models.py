@@ -150,17 +150,18 @@ class Cases(models.Model):
     debtors_count = self.people.filter(type='債務人').count()
     creditors_count = self.people.filter(type='債權人').count()
     co_owners_count = self.people.filter(type='共有人').count()
-    parts = []
-    if debtors_count > 0:
-      parts.append(f"  債務人({debtors_count})")
-    if creditors_count > 0:
-      parts.append(f"  債權人({creditors_count})")
-    if co_owners_count > 0:
-      parts.append(f"  共有人({co_owners_count})")
-    # 返回格式：每行前面都有两个空格缩进，每行之间有空行
-    if not parts:
-      return ""
-    result = "\n\n".join(parts)
+    peterpens_count = self.people.filter(type='小飛俠').count()
+    
+    # 在第一行「債務人(1) 債權人(1)」前面加入一個半形及一個全形的空白
+    # 在債務人及共有人的前面加入一個半形空格
+    # 第一行：債務人(0) 債權人(1)
+    # 第二行：共有人(1) 小飛俠(0)
+    # 半形空格 + 全形空格 = " \u3000"
+    line1 = f" \u3000 債務人({debtors_count}) 債權人({creditors_count})"
+    line2 = f" \u3000 共有人({co_owners_count}) 小飛俠({peterpens_count})"
+    
+    # 返回格式：兩行，用換行符分隔
+    result = f"{line1}\n{line2}"
     return result
 
   @property

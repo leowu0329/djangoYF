@@ -248,7 +248,7 @@ class PersonForm(forms.ModelForm):
 				display_name = user.profile.nickname if hasattr(user, 'profile') and user.profile.nickname else user.username
 				choices.append((display_name, display_name))
 		else:
-			# 默認情況：顯示 staff users（用於編輯模式或初始狀態）
+			# 創建模式且未選擇類型時，顯示 is_staff=True 的 CustomUser 的 profile.nickname
 			choices = [("", "--- 請選擇或自行輸入 ---")]
 			staff_users = CustomUser.objects.filter(is_staff=True).select_related('profile')
 			for user in staff_users:

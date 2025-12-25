@@ -17,7 +17,7 @@
             <div class="alert alert-danger mt-1">{{ error }}</div>
           {% endfor %}
         </div>
-        <div class="mb-3">
+        <div class="mb-3" id="userSelectRow">
           <label class="form-label" for="{{ form.user_select.id_for_label }}">{{ form.user_select.label }}</label>
           <div class="input-group">
             {{ form.user_select }}
@@ -193,12 +193,13 @@ document.addEventListener('DOMContentLoaded', function() {
             });
           }
         } else {
-          // 默認：顯示 staff users
+          // 當類型為空或未選擇時，顯示 is_staff=True 的 CustomUser 的 profile.nickname
           const option = document.createElement('option');
           option.value = '';
           option.textContent = '--- 請選擇或自行輸入 ---';
           userSelect.appendChild(option);
           
+          // 添加 is_staff=True 的 CustomUser 選項
           if (data.options && Array.isArray(data.options)) {
             data.options.forEach(item => {
               const opt = document.createElement('option');
@@ -276,16 +277,19 @@ document.addEventListener('DOMContentLoaded', function() {
   function toggleFieldsByType() {
     const holdingShareRow = document.getElementById('holdingShareRow');
     const investmentRow = document.getElementById('investmentRow');
+    const userSelectRow = document.getElementById('userSelectRow');
     const selectedType = typeSelect ? typeSelect.value : '';
     
     // Reset visibility first
     if (holdingShareRow) holdingShareRow.style.display = '';
     if (investmentRow) investmentRow.style.display = '';
+    if (userSelectRow) userSelectRow.style.display = '';
     
-    // 債務人: 隐藏全部4个字段
+    // 債務人: 隐藏全部4个字段和選擇人員欄位
     if (selectedType === '債務人') {
       if (holdingShareRow) holdingShareRow.style.display = 'none';
       if (investmentRow) investmentRow.style.display = 'none';
+      if (userSelectRow) userSelectRow.style.display = 'none';
     }
     // 債權人/共有人: 隐藏投資比例2个字段
     else if (selectedType === '債權人' || selectedType === '共有人') {

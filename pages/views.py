@@ -89,7 +89,8 @@ def load_user_select_options(request):
             # 只有自行输入选项（空选项）
             pass  # 不添加任何选项，只保留空选项
         else:
-            # 默认情况：显示 staff users
+            # 當類型為空或未選擇時，返回 is_staff=True 的 CustomUser 的 profile.nickname
+            # 這樣 Create Person 時可以顯示所有 staff 用戶
             staff_users = CustomUser.objects.filter(is_staff=True).select_related('profile')
             for user in staff_users:
                 display_name = user.profile.nickname if hasattr(user, 'profile') and user.profile.nickname else user.username
@@ -664,6 +665,16 @@ class PersonCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.cases = self.case
+        
+        # 如果類型為「小飛俠」，檢查名稱是否已存在於 Peterpen 中，如果不存在則創建
+        if form.instance.type == '小飛俠' and form.instance.name:
+            name = form.instance.name.strip()
+            if name:
+                # 檢查是否已存在
+                if not Peterpen.objects.filter(name=name).exists():
+                    # 如果不存在，創建新的 Peterpen 記錄
+                    Peterpen.objects.create(name=name)
+        
         messages.success(self.request, "人員資料已新增！")
         return super().form_valid(form)
 
@@ -676,6 +687,15 @@ class PersonUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'people/person_form.html'
 
     def form_valid(self, form):
+        # 如果類型為「小飛俠」，檢查名稱是否已存在於 Peterpen 中，如果不存在則創建
+        if form.instance.type == '小飛俠' and form.instance.name:
+            name = form.instance.name.strip()
+            if name:
+                # 檢查是否已存在
+                if not Peterpen.objects.filter(name=name).exists():
+                    # 如果不存在，創建新的 Peterpen 記錄
+                    Peterpen.objects.create(name=name)
+        
         messages.success(self.request, "人員資料已更新！")
         return super().form_valid(form)
 
