@@ -115,24 +115,22 @@
                     role="tab"
                     aria-controls="auctions"
                     aria-selected="false">
-              <i class="bi bi-hammer me-1"></i>拍賣(
+              <i class="bi bi-hammer me-1"></i>拍賣
               {% with latest_auction=case.auctions.last %}
                 {% if latest_auction %}
                   {% if case.objectbuilds.exists %}
-                    CP: {{ latest_auction.calculated_cp_value }}
                     {% if latest_auction.type == '1拍' and latest_auction.calculated_cp_value > 0.92 or latest_auction.type == '2拍' and latest_auction.calculated_cp_value > 1.15 or latest_auction.type == '3拍' and latest_auction.calculated_cp_value > 1.44 or latest_auction.type == '4拍' and latest_auction.calculated_cp_value > 1.80 %}
-                      [建議進場]
+                      <span style="color: #28a745;">( CP: {{ latest_auction.calculated_cp_value }} [建議進場] )</span>
                     {% else %}
-                      [不可進場]
+                      <span style="color: #dc3545;">( CP: {{ latest_auction.calculated_cp_value }} [不可進場] )</span>
                     {% endif %}
                   {% else %}
-                    無時價記錄
+                    ( 無時價記錄 )
                   {% endif %}
                 {% else %}
-                  無記錄
+                  ( 無記錄 )
                 {% endif %}
               {% endwith %}
-              )
             </button>
             <button class="nav-link text-start"
                     id="officialdocuments-tab"
