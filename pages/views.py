@@ -125,7 +125,7 @@ class CaseListView(LoginRequiredMixin, ListView):
     template_name = 'cases/case_list.html'  # <app>/<model>_list.html
     context_object_name = 'cases'
     ordering = ['caseNumber'] # Changed default ordering
-    paginate_by = 10  # Default pagination
+    paginate_by = 50  # Default pagination
 
     def get_paginate_by(self, queryset):
         return self.request.GET.get('page_size', self.paginate_by)
@@ -452,6 +452,30 @@ class CaseDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         case = self.get_object()
         context['officialdocuments'] = case.officialdocuments.all()
+        
+        # 對人員按照指定順序排序：小飛俠、共有人、債權人、債務人
+        people = case.people.all().annotate(
+            type_order=Case(
+                When(type='小飛俠', then=Value(1)),
+                When(type='共有人', then=Value(2)),
+                When(type='債權人', then=Value(3)),
+                When(type='債務人', then=Value(4)),
+                default=Value(5),
+                output_field=IntegerField()
+            )
+        ).order_by('type_order', 'name')
+        context['people_sorted'] = people
+        
+        # 找到最優先的拍別（按1拍、2拍、3拍、4拍的順序，找到第一個有底價的）
+        priority_order = ['1拍', '2拍', '3拍', '4拍']
+        priority_auction = None
+        for auction_type in priority_order:
+            auction = case.auctions.filter(type=auction_type, floorPrice__gt=0).first()
+            if auction:
+                priority_auction = auction
+                break
+        context['priority_auction'] = priority_auction
+        
         return context
 
 class CaseCreateView(LoginRequiredMixin, CreateView):

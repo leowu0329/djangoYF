@@ -352,7 +352,7 @@
                   </a>
                 {% endif %}
               </div>
-              {% if case.people.all %}
+              {% if people_sorted %}
                 <div class="table-responsive">
                   <table class="table table-sm table-hover align-middle">
                     <thead class="table-light">
@@ -367,7 +367,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      {% for person in case.people.all %}
+                      {% for person in people_sorted %}
                         <tr>
                           <td>{{ person.name }}</td>
                           <td class="text-center align-middle">{{ person.type }}</td>
@@ -808,7 +808,7 @@
                           <td class="text-center align-middle">{{ auction.auctionDate|date:"Y-m-d" }}</td>
                           <td class="text-center align-middle">
                             <div>{{ auction.floorPrice }}</div>
-                            {% if auction.floorPrice %}
+                            {% if auction.floorPrice and priority_auction and auction.id == priority_auction.id %}
                               {% if auction.type == '1拍' %}
                                 <div class="mt-1 suggested-prices"
                                      data-floor-price="{{ auction.floorPrice }}"

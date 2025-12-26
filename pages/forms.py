@@ -110,14 +110,19 @@ class CasesForm(forms.ModelForm):
 
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
-
+		
+		# 修改欄位標籤名稱
+		self.fields['bigSection'].label = '段名'
+		self.fields['smallSection'].label = '小段名'
+		self.fields['section'].label = '幾段'
+		
 		city_id = None
 		if self.instance and self.instance.city: # For existing instances, get initial city from instance
 			city_id = self.instance.city.id
-
+		
 		if self.is_bound: # If form is submitted, use data from POST
 			city_id = self.data.get('city')
-
+		
 		if city_id:
 			self.fields['township'].queryset = Township.objects.filter(city_id=city_id)
 		else:
@@ -227,6 +232,10 @@ class PersonForm(forms.ModelForm):
 		elif hasattr(self, 'initial') and self.initial and 'type' in self.initial:
 			# 使用初始值
 			current_type = self.initial['type']
+		else:
+			# 新增模式，預設為「小飛俠」
+			current_type = '小飛俠'
+			self.fields['type'].initial = '小飛俠'
 		
 		# 根據類型設置選項
 		choices = []
@@ -255,7 +264,26 @@ class PersonForm(forms.ModelForm):
 				display_name = user.profile.nickname if hasattr(user, 'profile') and user.profile.nickname else user.username
 				choices.append((display_name, display_name))
 		
+		# 編輯模式：如果現有的 name 值不在選項列表中，將它添加到選項中
+		if instance and hasattr(instance, 'pk') and instance.pk and instance.name:
+			existing_name = instance.name.strip()
+			if existing_name:
+				# 檢查現有的 name 是否已經在選項中
+				choice_values = [choice[0] for choice in choices]
+				if existing_name not in choice_values:
+					# 如果不在選項中，添加到選項列表
+					choices.append((existing_name, existing_name))
+		
 		self.fields['user_select'].choices = choices
+		
+		# 如果表單已提交，檢查提交的 user_select 值是否在選項中，如果不在則添加
+		if self.is_bound and 'user_select' in self.data:
+			submitted_value = self.data.get('user_select', '').strip()
+			if submitted_value:
+				choice_values = [choice[0] for choice in self.fields['user_select'].choices]
+				if submitted_value not in choice_values:
+					# 如果不在選項中，添加到選項列表
+					self.fields['user_select'].choices = list(self.fields['user_select'].choices) + [(submitted_value, submitted_value)]
 
 	class Meta:
 		model = Person
