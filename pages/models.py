@@ -232,9 +232,15 @@ class Land(models.Model):
 
   @property
   def formatted_landNumber(self):
-    if self.cases and self.cases.bigSection:
-      return f"{self.cases.bigSection}{self.landNumber}"
-    return self.landNumber
+    parts = []
+    if self.cases:
+      if self.cases.bigSection:
+        parts.append(self.cases.bigSection)
+      if self.cases.smallSection:
+        parts.append(self.cases.smallSection)
+    if self.landNumber:
+      parts.append(self.landNumber)
+    return ''.join(parts) if parts else self.landNumber
 
   def save(self, *args, **kwargs):
     try:
@@ -270,9 +276,15 @@ class Build(models.Model):
 
   @property
   def formatted_buildNumber(self):
-    if self.cases and self.cases.bigSection:
-      return f"{self.cases.bigSection}{self.buildNumber}"
-    return self.buildNumber
+    parts = []
+    if self.cases:
+      if self.cases.bigSection:
+        parts.append(self.cases.bigSection)
+      if self.cases.smallSection:
+        parts.append(self.cases.smallSection)
+    if self.buildNumber:
+      parts.append(self.buildNumber)
+    return ''.join(parts) if parts else self.buildNumber
 
   def save(self, *args, **kwargs):
     try:
